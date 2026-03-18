@@ -1,0 +1,33 @@
+# --- Python (Backend) ---
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+# Ignore actual uploaded assignments (privacy & storage)
+backend/uploads/assignments/*
+!backend/uploads/assignments/.gitkeep
+
+# --- Node/React (Frontend) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+.eslintcache
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- Editor Specific ---
+.vscode/
+.idea/
+*.swp
+*.swo
