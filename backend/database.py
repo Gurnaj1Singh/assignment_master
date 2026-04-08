@@ -1,10 +1,11 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .models import Base
+from dotenv import load_dotenv
+load_dotenv()
 
-
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:gsm1234@localhost:5432/assignment_master"
-
+SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

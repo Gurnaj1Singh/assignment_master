@@ -1,0 +1,25 @@
+# Web Framework & Server
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database
+sqlalchemy
+psycopg2-binary
+pgvector
+
+# Security & Auth
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+fastapi-mail
+
+# AI & Plagiarism Logic
+sentence-transformers
+torch
+networkx
+numpy
+
+# Testing & Utilities
+requests
+pytest
