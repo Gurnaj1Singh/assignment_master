@@ -1,35 +1,50 @@
-
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from .database import init_db, get_db
-from .api import auth, assignments, classrooms
+import logging
 from contextlib import asynccontextmanager
 
-# 1. Define the Lifespan Logic
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .api.v1.router import v1_router
+from .database import init_db
+from .middleware.exception_handler import RequestIDMiddleware, register_exception_handlers
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- Startup Logic ---
-    print("Initializing Database...")
-    init_db() 
+    logger.info("Initializing database...")
+    init_db()
     yield
-    # --- Shutdown Logic (if needed) ---
-    print("Shutting down server...")
+    logger.info("Shutting down server...")
 
-# 2. Pass lifespan to the FastAPI instance
-app = FastAPI(title="Assignment Master API", lifespan=lifespan)
-# Handle CORS (Essential for React Frontend to talk to Python)
+
+app = FastAPI(
+    title="Assignment Master API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# --- Middleware (order matters: outermost runs first) ---
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with your frontend URL
+    allow_origins=["*"],  # TODO: restrict to frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 3. Include Routers (The 'api' folder structure)
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(classrooms.router, prefix="/classrooms", tags=["Classrooms"])
-app.include_router(assignments.router, prefix="/assignments", tags=["Assignments"])
+# --- Global exception handlers ---
+register_exception_handlers(app)
+
+# --- Versioned API routes ---
+app.include_router(v1_router, prefix="/api/v1")
+
 
 @app.get("/")
 def read_root():

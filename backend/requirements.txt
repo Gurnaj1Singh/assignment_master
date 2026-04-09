@@ -2,11 +2,14 @@
 fastapi
 uvicorn[standard]
 python-multipart
+pydantic[email]
+pydantic-settings
 
 # Database
 sqlalchemy
 psycopg2-binary
 pgvector
+alembic
 
 # Security & Auth
 python-jose[cryptography]
@@ -19,7 +22,12 @@ sentence-transformers
 torch
 networkx
 numpy
+nltk
+
+# PDF Processing
+PyMuPDF
 
 # Testing & Utilities
 requests
 pytest
+httpx

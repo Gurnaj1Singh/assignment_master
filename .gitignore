@@ -31,3 +31,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# --- Claude exports ---
+9*.txt
+.claude
