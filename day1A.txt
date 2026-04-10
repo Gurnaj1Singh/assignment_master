@@ -1,0 +1,742 @@
+╭─── Claude Code v2.1.97 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                Welcome back Gurnaj!                │ started                 │
+│                                                    │ Run /init to create a … │
+│                       ▐▛███▜▌                      │ ─────────────────────── │
+│                      ▝▜█████▛▘                     │ Recent activity         │
+│                        ▘▘ ▝▝                       │ No recent activity      │
+│      Sonnet 4.6 · Claude Pro ·                     │                         │
+│      gurnajsinghmann@gmail.com's Organization      │                         │
+│       ~/Documents/Projects/assignment_master       │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+❯  source /home/gsm/Documents/Projects/assignment_master/venv/bin/activate      
+
+● Bash(source /home/gsm/Documents/Projects/assignment_master/venv/bin/activate
+      && echo "Virtual environment activated" && which python)
+  ⎿  Virtual environment activated
+     /home/gsm/Documents/Projects/assignment_master/venv/bin/python
+
+● Virtual environment activated. Python is at
+  /home/gsm/Documents/Projects/assignment_master/venv/bin/python.
+
+❯ /model                                                                        
+  ⎿  Set model to Opus 4.6
+
+❯ Act as a Senior Lead Architect and Technical Mentor. I am an 8th-semester CSE 
+   student at NIT Jalandhar, and a beginner in professional software            
+  development. We have 4 days (32 hours) to achieve Deep Mastery of this        
+  backend, evolve it into a production-grade system, and build "SOP-level" AI   
+  features.                                                                     
+                                                                                
+  ### MISSION 1: DEEP MASTERY & FILE-BY-FILE AUDIT                              
+  Analyze the backend. Create a 4-day (8hr/day) schedule. We will go            
+  file-by-file through every directory (eg. models, repositories, services,     
+  api, core).                                                                   
+  - For every library (FastAPI, SQLAlchemy, pgvector, SBERT, NetworkX, Alembic, 
+   NLTK, PyMuPDF, LangChain/OpenAI) and code snippet: Explain the 'What',       
+  'Why', and 'How it works under the hood'.                                     
+  - Socratic Method: Explain a block, then quiz me or ask me to modify it.      
+  - Improvement Flow: For every file, we start by explaining current code ->    
+  identifying gaps -> refactoring to 'Clean Code' (proper naming, docstrings,   
+  type hinting).                                                                
+                                                                                
+  ### MISSION 2: PRODUCT EVOLUTION & SOP BOOSTERS                               
+  Implement these features to reach 'Professional Grade':                       
+  1. TEACHER REFERENCE SOURCE: Upload textbooks/chapters with a dedicated       
+  'Reference Corpus' table.                                                     
+  2. SOURCE EXCLUSION VS. VERBATIM LOGIC: Update the engine to ignore factual   
+  matches found in Reference PDFs, BUT implement a 'Verbatim Check'             
+  (word-to-word matching). If a student copies the source 100% word-for-word,   
+  flag it as 'Verbatim Copying' instead of excluding it.                        
+  3. LLM ASSIGNMENT GENERATOR (Teacher): Use RAG to parse the Reference Corpus  
+  and generate 100 diverse questions. Teacher selects 'X' questions from those  
+  100 to be distributed and 'Y' number of questions per student, then the       
+  system randomly distributes 'Y' questions from 'X' to each student.           
+  4. LLM HINT ASSISTANT (Student): A RAG-based feature providing context-aware  
+  hints based on the reference corpus without giving the answer.                
+  5. ANALYTICS: A 'Collusion Heatmap' (NetworkX) and a real-time 'Submission    
+  Status' API.                                                                  
+  6. Add other necessary improvements needed for the backend, go through the    
+  code and identify them.                                                       
+                                                                                
+  ### MISSION 3: SESSION HYGIENE (CRITICAL)                                     
+  Explicitly state when I should start a NEW Claude session.                    
+  - Rule: One named Session = One major task completed.                         
+  - Provide a 'Context Summary' at each milestone to bridge sessions.           
+  - Include 'Session Refresh' points and git commit instructions within         
+  sessions.                                                                     
+                                                                                
+  ### MENTORSHIP RULES:                                                         
+  - The 'Failure Test': Tell me: "If we removed this [library/pattern], what    
+  production disaster would happen?"                                            
+  - Metaphors: Use analogies for complex layers.                                
+  - SOP Focus: Explain the engineering merit of the RAG pipeline so I can write 
+   about it in my Master's applications.                                        
+                                                                                
+  Present the 4-day Learning & Building Schedule now, integrating each feature  
+  and product evolution into the timeline.                                      
+  ⎿  ⧉ Selected 29 lines from 9question.txt in Visual Studio Code
+
+● Let me first audit the entire backend structure before creating the schedule.
+
+  Searched for 3 patterns (ctrl+o to expand)
+
+● Now let me read every backend file to understand the full architecture.
+
+  Read 35 files (ctrl+o to expand)
+
+● Now let me save some memory about you and this project, then present the full
+  schedule.
+
+  Read 1 file (ctrl+o to expand)
+
+● Write(.claude/projects/-home-gsm-Documents-Projects-assignment-master/memory/u
+       ser_profile.md)
+  ⎿  Wrote 12 lines to .claude/projects/-home-gsm-Documents-Projects-assignment-
+     master/memory/user_profile.md
+       1 ---
+       2 name: User Profile - Gurnaj
+       3 description: 8th-semester CSE student at NIT Jalandhar, beginner
+          in professional software dev, learning backend architecture
+       4 type: user
+       5 ---
+       6 
+       7 - 8th-semester CSE student at NIT Jalandhar
+       8 - Beginner in professional software development
+       9 - Interested in Master's applications — wants to understand engi
+         neering merit of RAG pipelines and AI features
+      10 - Prefers Socratic teaching method: explain, quiz, then modify
+     … +2 lines (ctrl+o to expand)
+
+● Write(.claude/projects/-home-gsm-Documents-Projects-assignment-master/memory/p
+       roject_assignment_master.md)
+  ⎿  Wrote 18 lines to .claude/projects/-home-gsm-Documents-Projects-assignment-
+     master/memory/project_assignment_master.md
+       1 ---
+       2 name: Assignment Master - Project Overview
+       3 description: Anti-plagiarism SOP platform with SBERT + pgvector 
+         + NetworkX, being evolved with RAG features
+       4 type: project
+       5 ---
+       6 
+       7 Assignment Master is a plagiarism detection system for academic 
+         assignments.
+       8 
+       9 **Current architecture (as of 2026-04-10):**
+      10 - Layered: models -> repositories -> services -> api (Clean Arch
+         itecture)
+     … +8 lines (ctrl+o to expand)
+
+● Write(.claude/projects/-home-gsm-Documents-Projects-assignment-master/memory/M
+       EMORY.md)
+  ⎿  Wrote 2 lines to .claude/projects/-home-gsm-Documents-Projects-assignment-m
+     aster/memory/MEMORY.md
+      1 - [User Profile](user_profile.md) — 8th-sem CSE at NITJ, beginner
+         dev, Socratic learner, Master's aspirant
+      2 - [Project Overview](project_assignment_master.md) — Assignment M
+        aster plagiarism system, 4-day sprint for mastery + RAG features
+
+● I've audited every file in your backend. Here's my full assessment and the
+  4-day schedule.
+
+  ---
+  Architecture Audit Summary
+
+  What you have (47 Python files across 9 directories):
+
+  backend/
+  ├── main.py                    # FastAPI app, lifespan, middleware
+  ├── config.py                  # Pydantic Settings (env-driven)
+  ├── database.py                # SQLAlchemy engine, session, init_db
+  ├── models/                    # 5 ORM models (User, Classroom, Membership,
+  Task, Submission, TextVector)
+  │   └── base.py                # TimestampMixin, SoftDeleteMixin
+  ├── repositories/              # Data access layer (Generic BaseRepo + 4
+  specialized)
+  │   └── vector_repo.py         # Raw SQL pgvector queries (the heaviest file)
+  ├── services/                  # Business logic layer
+  │   ├── auth_service.py        # OTP signup + JWT login
+  │   ├── classroom_service.py   # Classroom CRUD + membership
+  │   ├── nlp_service.py         # SBERT singleton (double-checked locking)
+  │   ├── pdf_service.py         # PyMuPDF text extraction
+  │   ├── plagiarism_service.py  # Chunk -> embed -> store -> score pipeline
+  │   └── graph_service.py       # NetworkX collusion detection
+  ├── schemas/                   # Pydantic V2 request/response DTOs
+  ├── api/v1/                    # Route handlers (auth, classrooms,
+  assignments)
+  │   └── deps.py                # JWT extraction, role guard
+  ├── core/                      # Security (bcrypt/JWT) + Email (OTP)
+  ├── middleware/                 # RequestID + global exception handlers
+  └── alembic/                   # 2 migrations (schema + HNSW index)
+
+  Current strengths: Clean layered architecture, proper soft-delete, pgvector
+  HNSW indexing, singleton NLP service, structured error handling.
+
+  Gaps I identified (we'll fix all of these):
+  1. No Reference Corpus table/logic (source PDFs not supported)
+  2. No verbatim detection (only semantic similarity)
+  3. No LLM integration (no RAG, no question generation, no hints)
+  4. OTP store is in-memory (lost on restart)
+  5. No deadline/due-date on assignments
+  6. No submission-status streaming/polling API
+  7. No collusion heatmap data endpoint (only cluster groups)
+  8. get_similarity_matrix uses exact string match instead of vector similarity
+  9. No rate limiting on auth endpoints
+  10. CORS is allow_origins=["*"] (fine for dev, not for prod)
+
+  ---
+  4-DAY (32-HOUR) SCHEDULE
+
+  DAY 1 (8 hrs): DEEP MASTERY — Foundation Layer
+
+  Theme: "Understand every brick before adding new rooms"
+
+  Block: 1A
+  Hours: 2 hrs
+  What We Do: models/ deep dive — SQLAlchemy ORM internals, declarative_base(),
+    mixins, UUID PKs, pgvector Vector(768), relationship cascades. Failure Test:
+
+    "What if we removed SoftDeleteMixin?" Quiz: Modify TextVector to support a
+    new source field.
+  ────────────────────────────────────────
+  Block: 1B
+  Hours: 2 hrs
+  What We Do: repositories/ deep dive — Generic repo pattern, TypeVar generics,
+    raw SQL in vector_repo.py, pgvector <=> cosine operator, HNSW index
+    parameters (m=24, ef_construction=128). Failure Test: "What if there's no
+    HNSW index?" Quiz: Write a new repo method.
+  ────────────────────────────────────────
+  Block: 1C
+  Hours: 2 hrs
+  What We Do: services/ deep dive — Singleton pattern (double-checked locking),
+    SBERT model loading, NLTK tokenization, PyMuPDF pipeline, plagiarism scoring
+
+    formula. Failure Test: "What if NLP isn't a singleton?" Quiz: Add
+    paragraph-level embeddings.
+  ────────────────────────────────────────
+  Block: 1D
+  Hours: 2 hrs
+  What We Do: core/ + api/ + middleware/ deep dive — bcrypt hashing, JWT
+    encode/decode, OAuth2PasswordBearer flow, FastAPI dependency injection,
+    lifespan context manager, RequestID middleware. Refactor: Identify and fix
+    naming inconsistencies.
+
+  Session Milestone: You can explain every file's role, draw the full request
+  lifecycle from HTTP to DB, and explain each library's purpose.
+
+  Git checkpoint: git commit -m "Day 1: Codebase mastery notes and minor 
+  refactors"
+
+  ---
+  DAY 2 (8 hrs): Reference Corpus + Verbatim Detection + Source Exclusion
+
+  Theme: "The teacher's source material is truth, not plagiarism"
+
+  Block: 2A
+  Hours: 2 hrs
+  What We Do: MODEL + MIGRATION: Create ReferenceDocument model (id, task_id,
+    file_path, uploaded_by) and ReferenceVector table (like TextVector but
+  linked
+     to reference docs). Write Alembic migration 003. Socratic: "Why separate
+    tables instead of a source flag on TextVector?"
+  ────────────────────────────────────────
+  Block: 2B
+  Hours: 2 hrs
+  What We Do: SERVICE: Reference Upload Pipeline. PDF upload -> extract text ->
+    chunk -> embed -> store in reference_vectors. New ReferenceService. Failure 
+    Test: "What if reference vectors share the same table as student vectors?"
+  ────────────────────────────────────────
+  Block: 2C
+  Hours: 2 hrs
+  What We Do: SOURCE EXCLUSION + VERBATIM LOGIC. Update PlagiarismService to:
+  (1)
+    Query reference vectors for each student sentence, (2) If cosine similarity
+  >
+     0.85 against reference = EXCLUDE from plagiarism score, (3) BUT if exact
+    string match (normalized) against reference = FLAG as "Verbatim Copying".
+    Quiz: "Why can't we use only cosine similarity for verbatim detection?"
+  ────────────────────────────────────────
+  Block: 2D
+  Hours: 2 hrs
+  What We Do: API ENDPOINTS + TESTING. POST /references/upload/{task_id}, update
+
+    submission response to include verbatim_flags. Wire everything through, test
+
+    with real PDFs.
+
+  Session Milestone: Teachers can upload source material. Student submissions
+  are scored excluding source content, but verbatim copying is caught.
+
+  Git checkpoint: git commit -m "Feat: Reference corpus, source exclusion, 
+  verbatim detection"
+
+  ---
+  DAY 3 (8 hrs): LLM Features — Assignment Generator + Hint Assistant
+
+  Theme: "RAG is retrieval-then-generation, not magic"
+
+  Block: 3A
+  Hours: 2 hrs
+  What We Do: RAG ARCHITECTURE LESSON. What is RAG? Why not just send the whole
+    PDF to GPT? Chunking strategies, embedding-based retrieval, prompt
+    engineering. SOP Angle: How to write about RAG in Master's applications.
+    Setup: LangChain/OpenAI integration, config for API key.
+  ────────────────────────────────────────
+  Block: 3B
+  Hours: 3 hrs
+  What We Do: LLM ASSIGNMENT GENERATOR. (1) Teacher uploads reference corpus
+    (already done Day 2), (2) System retrieves relevant chunks via pgvector, (3)
+
+    LLM generates 100 diverse questions across Bloom's taxonomy, (4) Teacher
+    selects X questions, sets Y per student, (5) System randomly distributes Y
+    from X to each enrolled student. New  models: GeneratedQuestion,
+    StudentQuestionAssignment.
+  ────────────────────────────────────────
+  Block: 3C
+  Hours: 2 hrs
+  What We Do: LLM HINT ASSISTANT. Student asks a question -> RAG retrieves
+    relevant reference chunks -> LLM generates a hint (not the answer).  Prompt
+    engineering to prevent answer leakage. Quiz: "How would you  test that hints
+
+    don't leak answers?"
+  ────────────────────────────────────────
+  Block: 3D
+  Hours: 1 hr
+  What We Do: INTEGRATION TESTING. End-to-end: upload reference -> generate
+    questions -> distribute -> student gets hint. API endpoints for all  flows.
+
+  Session Milestone: Full RAG pipeline working. Teachers generate questions from
+   corpus, students get AI-powered hints.
+
+  Git checkpoint: git commit -m "Feat: LLM question generator (RAG) + hint 
+  assistant"
+
+  ---
+  DAY 4 (8 hrs): Analytics, Polish, Production Hardening
+
+  Theme: "Ship-ready means observable, testable, and defended"
+
+  Block: 4A
+  Hours: 2 hrs
+  What We Do: COLLUSION HEATMAP DATA. New endpoint returning pairwise similarity
+
+    scores as a matrix (not just clusters). Frontend-ready JSON for heatmap
+    visualization. SUBMISSION STATUS API: Real-time polling endpoint (GET 
+    /assignments/status/{task_id}) showing per-student submission state.
+  ────────────────────────────────────────
+  Block: 4B
+  Hours: 2 hrs
+  What We Do: PRODUCTION HARDENING. (1) Move OTP to Redis/DB-backed store, (2)
+    Add rate limiting on auth endpoints, (3) Lock down CORS, (4) Add deadline
+    field to AssignmentTask, (5) Prevent duplicate submissions per student per
+    task.
+  ────────────────────────────────────────
+  Block: 4C
+  Hours: 2 hrs
+  What We Do: TESTING + ALEMBIC FINALIZATION. Write tests for critical paths
+    (plagiarism scoring, source exclusion, verbatim detection). Run all  Alembic
+
+    migrations cleanly. Verify HNSW index with EXPLAIN ANALYZE.
+  ────────────────────────────────────────
+  Block: 4D
+  Hours: 2 hrs
+  What We Do: FINAL REVIEW + SOP DOCUMENT. Walk through every new feature
+    file-by-file. Write a technical summary of the RAG pipeline architecture
+  (for
+     Master's applications). Final git tag: v2.0.0-production.
+
+  Session Milestone: Production-grade system with all 6 features, tested,
+  documented.
+
+  Git checkpoint: git commit -m "Feat: Analytics heatmap, submission status, 
+  production hardening"
+
+  ---
+  SESSION MANAGEMENT RULES
+
+  ┌───────────┬──────────────────────┬───────────────────────────────┐
+  │  Session  │        Scope         │   When to Start New Session   │
+  ├───────────┼──────────────────────┼───────────────────────────────┤
+  │ Session 1 │ Day 1 (all of 1A-1D) │ After Day 1 commit            │
+  ├───────────┼──────────────────────┼───────────────────────────────┤
+  │ Session 2 │ Day 2 (2A-2D)        │ After Reference Corpus commit │
+  ├───────────┼──────────────────────┼───────────────────────────────┤
+  │ Session 3 │ Day 3 (3A-3D)        │ After RAG features commit     │
+  ├───────────┼──────────────────────┼───────────────────────────────┤
+  │ Session 4 │ Day 4 (4A-4D)        │ Final session                 │
+  └───────────┴──────────────────────┴───────────────────────────────┘
+
+  Context Summary format (I'll provide at each milestone):
+  STATUS: [What's done]
+  FILES CHANGED: [List]
+  NEXT SESSION STARTS WITH: [First task]
+  KEY DECISIONS: [Architecture choices made]
+
+  Session Refresh points (within sessions): Every 2 hours, we'll do a quick
+  "where are we" check. If context is getting heavy, I'll tell you explicitly:
+  "Start a new session now and paste this summary."
+
+  ---
+  Ready to Begin?
+
+  We start with Block 1A: The Models Layer. I'll open models/base.py and teach
+  you exactly how SQLAlchemy's declarative_base() works under the hood, why
+  mixins are a production pattern, and then quiz you.
+
+  Say "Let's go" and we dive into Day 1, Block 1A.
+
+✻ Baked for 1m 57s
+
+❯ /model                                                                        
+  ⎿  Set model to Sonnet 4.6 (default)
+
+❯ /usage 
+  ⎿  Status dialog dismissed
+
+❯ /rename backend plan 
+  ⎿  Session renamed to: backend plan
+
+❯ /export 9Backendplan.md                                                       
+  ⎿  Conversation exported to:
+     /home/gsm/Documents/Projects/assignment_master/9Backendplan.txt
+
+❯ Let's go                                                                      
+
+● DAY 1 — BLOCK 1A: The Models Layer
+
+  File 1: models/base.py
+
+  Let's start here. This 35-line file is the bedrock of your entire database.
+
+  from sqlalchemy.orm import declarative_base
+  Base = declarative_base()
+
+  ---
+  WHAT is declarative_base()?
+
+  Base is a Python class factory. When you write:
+
+  class User(TimestampMixin, SoftDeleteMixin, Base):
+      __tablename__ = "users"
+      id = Column(...)
+
+  SQLAlchemy's metaclass machinery scans User at import time, reads every
+  Column(...) attribute, and registers it in Base.metadata — a central registry
+  of all table definitions.
+
+  The analogy: Base is the architect's blueprint registry. Every model class
+  that inherits from it is like handing a new floor plan to that registry. When
+  you call Base.metadata.create_all(engine), SQLAlchemy takes all registered
+  blueprints and issues CREATE TABLE statements in one shot.
+
+  ---
+  HOW it works under the hood
+
+  Base = declarative_base()
+       │
+       └─► Returns a class whose metaclass is `DeclarativeMeta`
+           DeclarativeMeta.__init__ runs for every subclass
+           It inspects class attributes, finds Column() objects,
+           builds a Table() object, registers it in Base.metadata
+
+  Python's __init_subclass__ / metaclass hooks fire at class definition time,
+  not at object instantiation. This is why you never call User() to create the
+  table — the schema is registered the moment Python parses the class body.
+
+  ---
+  WHY TimestampMixin?
+
+  Look at this:
+
+  class TimestampMixin:
+      created_at = Column(DateTime(timezone=True), server_default=func.now(),
+  ...)
+      updated_at = Column(DateTime(timezone=True), server_default=func.now(),
+  onupdate=func.now(), ...)
+
+  server_default=func.now() — This does NOT set the value in Python. It tells
+  SQLAlchemy to emit DEFAULT NOW() in the CREATE TABLE SQL. The database engine
+  sets the timestamp, not your Python process. This is critical for distributed
+  systems where multiple app servers have different clocks.
+
+  onupdate=func.now() — SQLAlchemy fires this client-side when an UPDATE is
+  issued via the ORM. But note: if you update rows via raw SQL (UPDATE users SET
+   ...), updated_at will NOT change. This is a known limitation — production
+  systems often use a DB-level trigger instead.
+
+  The Failure Test: "What if we removed TimestampMixin from all models?"
+
+  You'd lose audit trails forever. No way to answer: "When was this submission
+  made? Which submissions were created after the deadline? When was this
+  classroom created?" Every compliance audit, every dispute resolution becomes
+  impossible. Timestamps are non-negotiable in any system that touches academic
+  integrity.
+
+  ---
+  WHY SoftDeleteMixin?
+
+  class SoftDeleteMixin:
+      is_deleted = Column(Boolean, default=False, nullable=False, index=True)
+
+  Hard delete = DELETE FROM users WHERE id = ? — the row is gone forever.
+
+  Soft delete = UPDATE users SET is_deleted = TRUE WHERE id = ? — the row exists
+   but is hidden.
+
+  Why it matters for your system specifically:
+  - A student submits, professor reviews plagiarism report, then the submission
+  is "deleted" — but you still need that submission's TextVector rows for
+  historical similarity comparisons.
+  - Legal: Universities may be required to retain academic records for 7 years.
+  - Audit: "Show me all submissions that were deleted" — impossible with hard
+  delete.
+
+  Notice index=True on is_deleted. Every query filters by this column. Without
+  the index, every query becomes a full table scan.
+
+  The Failure Test: "What if we used hard deletes?" Every TextVector for a
+  deleted submission cascades away. Future plagiarism checks miss those
+  sentences. A student could delete their submission after being caught,
+  eliminating the evidence.
+
+  ---
+  The Mixin Composition Pattern
+
+  class User(TimestampMixin, SoftDeleteMixin, Base):
+
+  Python's MRO (Method Resolution Order) resolves left-to-right. TimestampMixin
+  columns come first, then SoftDeleteMixin, then Base's machinery runs. The
+  mixins have no __init__ — they're pure column containers. SQLAlchemy's
+  metaclass merges all columns from the MRO into the final Table object.
+
+  Why not put timestamps and is_deleted directly into each model? DRY (Don't
+  Repeat Yourself). You have 5 models. Without mixins, you'd write those same 3
+  columns 5 times. One change (e.g., adding a deleted_by column to
+  SoftDeleteMixin) propagates to all models automatically.
+
+  ---
+  QUIZ — Block 1A.1
+
+  Answer in your own words before we move on:
+
+  1. Conceptual: When exactly does SQLAlchemy register User's columns into
+  Base.metadata — when you import the class, or when you create a User() object?
+  2. Practical: Your updated_at uses onupdate=func.now(). If a professor
+  directly runs UPDATE submissions SET status='completed' in psql, will
+  updated_at be updated? Why or why not?
+  3. Modification task: The SoftDeleteMixin currently only records is_deleted.
+  In production, we'd also want to know who deleted it and when. Add two columns
+   to SoftDeleteMixin: deleted_at (DateTime, nullable) and deleted_by (UUID,
+  nullable). Write the code here — don't modify the file yet.
+
+  ---
+  Once you answer, we move to File 2: models/user.py where we dissect UUID
+  primary keys, relationship cascades, and why back_populates beats backref.
+
+✻ Crunched for 39s
+
+❯ /usage 
+  ⎿  Status dialog dismissed
+
+❯ 1. SQL Alchemy registers User's columns into Base.metadata when you import    
+  the class using Base = Declarative_Base()                                     
+  2. Practical: no updated_at will not be updated, because SQLalchemy pushed    
+  the update via ORM but since we are directly using psql command therefore it  
+  will not be updated and is a limitation so instead we add DB level triggers   
+  for it.                                                                       
+  3. Class SoftDeleteMixin:                                                     
+        is_deleted = Column(Boolean, default=False, nullable=False, index =     
+  True)                                                                         
+        deteted_at = Column(DateTime(timezone=True),server_default=func_now,    
+  nullable=False)                                                               
+        deleted_by = Column(UUID(as_uuid=True), nullable=False)                 
+● Quiz Results
+
+  Q1 — 9/10
+
+  Correct instinct, but sharpen the precision: declarative_base() just creates
+  Base. The registration happens when Python parses the class body of User —
+  i.e., when the module containing User is imported. The metaclass __init__
+  fires at class-definition time. So the trigger is "importing the module that
+  defines User", not calling declarative_base() itself.
+
+  Why this matters: Your database.py has this line:
+  from . import models as _models  # noqa: F401
+  That import is mandatory — without it, Base.metadata is empty and create_all()
+   creates zero tables. This is a common "nothing happened" bug for beginners.
+
+  Q2 — 10/10
+
+  Perfect. You identified both the limitation and the production fix. Solid.
+
+  ---
+  Q3 — Partially correct. Three bugs to fix:
+
+  Your answer:
+  deleted_at = Column(DateTime(timezone=True), server_default=func_now,
+  nullable=False)
+  deleted_by = Column(UUID(as_uuid=True), nullable=False)
+
+  Bug 1 — nullable=False on both. These columns are empty for every living row.
+  Making them non-nullable means every INSERT would need a deleted_at and
+  deleted_by value upfront — that's a contradiction. They must be nullable=True.
+
+  Bug 2 — server_default=func_now. func_now doesn't exist. You want func.now().
+  But more importantly: server_default means "set this on INSERT". You don't
+  want deleted_at auto-set on INSERT — only when deleted. So no server_default
+  at all.
+
+  Bug 3 — typo: deteted_at → deleted_at.
+
+  Corrected version:
+  from sqlalchemy import Boolean, Column, DateTime
+  from sqlalchemy.dialects.postgresql import UUID
+
+  class SoftDeleteMixin:
+      is_deleted  = Column(Boolean, default=False, nullable=False, index=True)
+      deleted_at  = Column(DateTime(timezone=True), nullable=True)
+      deleted_by  = Column(UUID(as_uuid=True), nullable=True)
+
+  And in BaseRepository.soft_delete(), you'd update:
+  def soft_delete(self, id: Any, deleted_by: UUID | None = None) -> ModelType | 
+  None:
+      obj = self.get_by_id(id)
+      if obj and isinstance(obj, SoftDeleteMixin):
+          obj.is_deleted = True
+          obj.deleted_at = datetime.now(timezone.utc)  # Python-side, not 
+  server_default
+          obj.deleted_by = deleted_by
+          self.db.flush()
+      return obj
+
+  Good instinct on the structure though — you understood what to add.
+
+  ---
+  File 2: models/user.py
+
+  class User(TimestampMixin, SoftDeleteMixin, Base):
+      __tablename__ = "users"
+
+      id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+      name = Column(String(100), nullable=False)
+      email = Column(String(255), unique=True, nullable=False, index=True)
+      password_hash = Column(Text, nullable=False)
+      role = Column(String(20), nullable=False)
+
+      memberships = relationship("ClassroomMembership",
+  back_populates="student", cascade="all, delete-orphan")
+      submissions = relationship("Submission", back_populates="student",
+  cascade="all, delete-orphan")
+
+  ---
+  UUID Primary Key — Why not Integer?
+
+  id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  UUID(as_uuid=True) — PostgreSQL has a native uuid column type. as_uuid=True
+  tells SQLAlchemy to map it to Python's uuid.UUID object, not a raw string.
+
+  default=uuid.uuid4 — Note: this is uuid.uuid4 (a function reference), NOT
+  uuid.uuid4() (a call). SQLAlchemy calls this function each time a new row is
+  created. If you wrote default=uuid.uuid4(), every row would get the same UUID
+  — generated once at class definition time.
+
+  Why UUID over auto-increment integer?
+
+  ┌─────────────────────────────────┬───────────────────────────────────────┐
+  │           Integer PK            │                UUID PK                │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Exposes record count (/users/1  │ Opaque — no information leakage       │
+  │ → "only 1 user")                │                                       │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Sequential — IDOR attacks easy  │ Random — cannot guess adjacent IDs    │
+  │ (/users/2, /users/3)            │                                       │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Hard to shard across databases  │ Globally unique — merge two databases │
+  │                                 │  trivially                            │
+  ├─────────────────────────────────┼───────────────────────────────────────┤
+  │ Fast index (narrow, sequential) │ Slightly wider index, but random      │
+  │                                 │ insertion causes page splits          │
+  └─────────────────────────────────┴───────────────────────────────────────┘
+
+  For a system dealing with student records and academic integrity, IDOR 
+  (Insecure Direct Object Reference) protection alone justifies UUIDs.
+
+  The Failure Test: "What if we used integer PKs?" A student who submits
+  assignment gets submission_id=42. They can immediately enumerate
+  /submission-detail/41, /submission-detail/43 and read other students'
+  plagiarism reports. That's a data breach.
+
+  ---
+  The role Column — A Hidden Gap
+
+  role = Column(String(20), nullable=False)
+
+  Right now, role is a free-text string. If someone inserts role="admin" or
+  role="PROFESSOR" (uppercase) directly into the DB, your require_role(user, 
+  "professor") check silently fails — they get 403 forbidden on everything.
+
+  Production fix: use a PostgreSQL ENUM type:
+  from sqlalchemy import Enum
+  role = Column(Enum("student", "professor", name="user_role"), nullable=False)
+  The DB itself rejects any value not in that set. This is called "pushing
+  constraints down to the database" — defence in depth.
+
+  ---
+  Relationships — back_populates vs backref
+
+  memberships = relationship("ClassroomMembership", back_populates="student",
+  cascade="all, delete-orphan")
+
+  back_populates requires you to define the relationship on both sides
+  explicitly:
+  - User.memberships → "I point to ClassroomMembership"
+  - ClassroomMembership.student → "I point back to User"
+
+  backref would auto-create the reverse side. It's a shortcut, but it's implicit
+   — the reverse relationship exists but you can't see it in the code. With
+  back_populates, both sides are visible, which is why it's preferred in
+  production codebases.
+
+  The analogy: back_populates is like a two-way contract both parties sign.
+  backref is like giving someone a key to your house without telling them — it
+  works, but nobody reading the code can see it.
+
+  ---
+  cascade="all, delete-orphan" — What does this actually do?
+
+  When you delete a User via SQLAlchemy ORM:
+  - cascade="all" → also deletes their ClassroomMembership rows and Submission
+  rows
+  - cascade="delete-orphan" → if you remove a Submission from user.submissions
+  collection (without deleting the User), that orphaned Submission also gets
+  deleted
+
+  But wait — your models also have ondelete="CASCADE" on the ForeignKey:
+  ForeignKey("users.id", ondelete="CASCADE")
+
+  That's the database-level cascade. If someone runs DELETE FROM users WHERE 
+  id=? in raw SQL, the DB handles the cascade. The ORM cascade handles it when
+  you use db.delete(user).
+
+  Having both is correct — defence in depth. ORM cascade for application-level
+  deletes, DB cascade as a safety net for raw SQL operations.
+
+  ---
+  QUIZ — Block 1A.2
+
+  1. Bug hunt: What's the difference between default=uuid.uuid4 and
+  default=uuid.uuid4() in the Column definition? What production disaster does
+  the wrong one cause?
+  2. Design question: Currently role = Column(String(20)). Describe two specific
+   attack scenarios this enables that a database ENUM would prevent.
+  3. Modification task: The User model has no relationship to AssignmentTask.
+  Should it? A professor creates tasks — should User have a tasks relationship?
+  Write out what it would look like, then tell me: would you actually add it?
+  Why or why not?
+
+  Answer these, then we go to File 3: models/classroom.py — where we dissect the
+   junction table pattern and the UniqueConstraint.
+
+✻ Cogitated for 52s
