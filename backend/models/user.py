@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, Text
+from sqlalchemy import Column, Enum, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -19,7 +19,7 @@ class User(TimestampMixin, SoftDeleteMixin, Base):
     name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(Text, nullable=False)
-    role = Column(String(20), nullable=False)
+    role = Column(Enum("student", "professor", name="user_role"),nullable=False)
 
     memberships = relationship(
         "ClassroomMembership",

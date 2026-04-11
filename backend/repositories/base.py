@@ -1,12 +1,11 @@
 """Generic CRUD base repository with automatic soft-delete filtering."""
 
-from datetime import datetime, timezone  # Fix: Import both class and objectfrom time import timezone
+from datetime import datetime, timezone
 from typing import Any, Generic, TypeVar
+from uuid import UUID
 
-from sqlalchemy import Boolean, Column, DateTime
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Session
-from uuid import UUID  # Fix: Need this for type hinting
+
 from ..models.base import Base, SoftDeleteMixin
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -37,11 +36,16 @@ class BaseRepository(Generic[ModelType]):
         return obj
 
     def soft_delete(self, id: Any, deleted_by: UUID | None = None) -> ModelType | None:
+        """
+        Logically delete a row — sets is_deleted=True, records who and when.
+
+        deleted_by: UUID of the authenticated user triggering the deletion.
+                    Pass None only from tests or admin scripts.
+        """
         obj = self.get_by_id(id)
         if obj and isinstance(obj, SoftDeleteMixin):
             obj.is_deleted = True
-            obj.deleted_at = datetime.now(timezone.utc)  # Python-side, not server_default
+            obj.deleted_at = datetime.now(timezone.utc)
             obj.deleted_by = deleted_by
             self.db.flush()
         return obj
-

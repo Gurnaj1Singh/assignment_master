@@ -129,7 +129,12 @@ class ClassroomService:
         }
 
     def create_task(
-        self, classroom_id: UUID, title: str, professor_id: UUID
+        self,
+        classroom_id: UUID,
+        title: str,
+        professor_id: UUID,
+        description: str | None = None,
+        due_date=None,
     ) -> AssignmentTask:
         classroom = self.classroom_repo.get_by_id(classroom_id)
         if not classroom:
@@ -146,8 +151,34 @@ class ClassroomService:
         task = self.task_repo.create(
             classroom_id=classroom_id,
             title=title,
+            description=description,
+            due_date=due_date,
             assignment_code=_generate_code(),
         )
+        self.db.commit()
+        self.db.refresh(task)
+        return task
+
+    def attach_task_pdf(
+        self, task_id: UUID, professor_id: UUID, pdf_path: str
+    ) -> AssignmentTask:
+        """
+        Attach an uploaded question-paper PDF to an existing task.
+        Only the professor who owns the task's classroom may do this.
+        """
+        task = self.task_repo.get_by_id(task_id)
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found.",
+            )
+        if task.classroom.professor_id != professor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not own this task.",
+            )
+
+        task.assignment_pdf_path = pdf_path
         self.db.commit()
         self.db.refresh(task)
         return task

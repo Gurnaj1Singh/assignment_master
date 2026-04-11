@@ -5,7 +5,8 @@ TimestampMixin  — adds created_at / updated_at (auto-managed).
 SoftDeleteMixin — adds is_deleted flag; repositories filter by default.
 """
 
-from sqlalchemy import UUID, Boolean, Column, DateTime
+from sqlalchemy import Boolean, Column, DateTime
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
 
@@ -33,4 +34,4 @@ class SoftDeleteMixin:
 
     is_deleted = Column(Boolean, default=False, nullable=False, index=True)
     deleted_at  = Column(DateTime(timezone=True), nullable=True)
-    deleted_by  = Column(UUID(as_uuid=True), nullable=True)
+    deleted_by  = Column(PG_UUID(as_uuid=True), nullable=True)

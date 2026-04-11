@@ -82,10 +82,17 @@ def create_task(
 ):
     require_role(current_user, "professor", "Only professors can create tasks.")
     service = ClassroomService(db)
-    task = service.create_task(classroom_id, request.title, current_user.id)
+    task = service.create_task(
+        classroom_id,
+        request.title,
+        current_user.id,
+        description=request.description,
+        due_date=request.due_date,
+    )
     return {
         "message": "Assignment task created successfully.",
         "task_id": str(task.id),
         "task_code": task.assignment_code,
         "title": task.title,
+        "due_date": task.due_date,
     }

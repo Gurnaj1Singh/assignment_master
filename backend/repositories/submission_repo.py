@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy.orm import Session
-
+from ..models.classroom import Classroom
 from ..models.submission import AssignmentTask, Submission
 from .base import BaseRepository
 
@@ -28,3 +28,10 @@ class TaskRepository(BaseRepository[AssignmentTask]):
             .filter(AssignmentTask.classroom_id == classroom_id)
             .all()
         )
+    def get_by_professor(self, professor_id: UUID) -> list[AssignmentTask]:
+      return (                                                                             
+          self.db.query(AssignmentTask)
+          .join(Classroom, AssignmentTask.classroom_id == Classroom.id)                    
+          .filter(Classroom.professor_id == professor_id, AssignmentTask.is_deleted ==False)                                                                                   
+          .all()  
+      ) 

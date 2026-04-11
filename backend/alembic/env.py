@@ -11,8 +11,11 @@ from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 
-# Add backend/ to sys.path so model imports work
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Add project root (assignment_master/) to sys.path.
+# env.py lives at backend/alembic/env.py — two levels up reaches the project root,
+# which is the directory that contains the `backend` package.
+# `from backend.models import Base` then resolves correctly.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 

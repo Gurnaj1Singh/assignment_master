@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -24,7 +24,7 @@ class Classroom(TimestampMixin, SoftDeleteMixin, Base):
         index=True,
     )
     class_name = Column(String(200), nullable=False)
-    class_code = Column(String(10), unique=True, nullable=False, index=True)
+    class_code = Column(String(10), unique=True, nullable=False)
 
     professor = relationship("User", foreign_keys=[professor_id])
     memberships = relationship(
@@ -63,7 +63,19 @@ class ClassroomMembership(TimestampMixin, SoftDeleteMixin, Base):
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
-        UniqueConstraint("classroom_id", "student_id", name="uq_classroom_student"),
+        # Partial unique index — enforces uniqueness only among active (non-deleted) rows.
+        # WHY text() and not (SoftDeleteMixin.is_deleted == False):
+        #   is_deleted is not in scope inside the class body; it lives on the mixin.
+        #   Using text() passes the condition directly to PostgreSQL, bypassing Python scoping.
+        # FAILURE TEST: Without this, a soft-deleted student who rejoins gets an
+        #   IntegrityError from the old blanket UNIQUE constraint, locking them out forever.
+        Index(
+            "uq_active_classroom_student",
+            "classroom_id",
+            "student_id",
+            unique=True,
+            postgresql_where=text("is_deleted = FALSE"),
+        ),
     )
 
     classroom = relationship("Classroom", back_populates="memberships")
