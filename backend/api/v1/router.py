@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from . import assignments, auth, classrooms, references
+from . import assignments, auth, classrooms, questions, references
 
 v1_router = APIRouter()
 v1_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
@@ -14,4 +14,7 @@ v1_router.include_router(
 )
 v1_router.include_router(
     references.router, prefix="/references", tags=["References"]
+)
+v1_router.include_router(
+    questions.router, prefix="/questions", tags=["Questions"]
 )

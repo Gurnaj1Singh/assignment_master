@@ -89,26 +89,85 @@ class VectorRepository:
             query, {"sub_id": submission_id, "threshold": threshold}
         ).all()
 
-    def get_similarity_matrix(self, task_id: UUID) -> list:
+    def get_similarity_matrix(self, task_id: UUID, threshold: float = 0.85) -> list:
         query = text("""
             SELECT
                 u1.name   AS student_a,
                 u2.name   AS student_b,
-                COUNT(*)  AS matching_sentences
+                AVG(1 - (v1.embedding <=> v2.embedding)) AS avg_similarity,
+                COUNT(*) FILTER (
+                    WHERE (1 - (v1.embedding <=> v2.embedding)) > :threshold
+                ) AS matching_sentences
             FROM text_vectors v1
-            JOIN text_vectors v2 ON v1.content_chunk = v2.content_chunk
+            JOIN text_vectors v2 ON v1.submission_id != v2.submission_id
             JOIN submissions  s1 ON v1.submission_id = s1.id
             JOIN submissions  s2 ON v2.submission_id = s2.id
             JOIN users        u1 ON s1.student_id    = u1.id
             JOIN users        u2 ON s2.student_id    = u2.id
             WHERE s1.task_id  = :task_id
+              AND s2.task_id  = :task_id
               AND s1.id < s2.id
               AND s1.is_deleted = false
               AND s2.is_deleted = false
+              AND v1.type = 'sentence'
+              AND v2.type = 'sentence'
             GROUP BY u1.name, u2.name
-            HAVING COUNT(*) > 5
+            HAVING COUNT(*) FILTER (
+                WHERE (1 - (v1.embedding <=> v2.embedding)) > :threshold
+            ) > 5
         """)
-        return self.db.execute(query, {"task_id": task_id}).all()
+        return self.db.execute(
+            query, {"task_id": task_id, "threshold": threshold}
+        ).all()
+
+    def get_heatmap_data(self, task_id: UUID, threshold: float = 0.85) -> list:
+        """
+        Pairwise similarity for ALL student pairs in a task.
+        Returns every pair regardless of similarity level (frontend renders the heatmap).
+
+        NOTE: This is O(n^2) in student count × sentence count. For large classes
+        (50+ students with 100+ sentences each), consider caching the result with
+        a TTL of ~5 minutes keyed on (task_id, last_submission_timestamp).
+        """
+        query = text("""
+            WITH sentence_counts AS (
+                SELECT s.student_id, COUNT(*) AS total_sentences
+                FROM text_vectors v
+                JOIN submissions s ON v.submission_id = s.id
+                WHERE s.task_id = :task_id
+                  AND s.is_deleted = false
+                  AND v.type = 'sentence'
+                GROUP BY s.student_id
+            )
+            SELECT
+                u1.name AS student_a,
+                u2.name AS student_b,
+                AVG(1 - (v1.embedding <=> v2.embedding)) * 100 AS similarity,
+                COUNT(*) FILTER (
+                    WHERE (1 - (v1.embedding <=> v2.embedding)) > :threshold
+                ) AS shared_sentences,
+                sc1.total_sentences AS total_sentences_a,
+                sc2.total_sentences AS total_sentences_b
+            FROM text_vectors v1
+            JOIN text_vectors v2 ON v1.submission_id != v2.submission_id
+            JOIN submissions  s1 ON v1.submission_id = s1.id
+            JOIN submissions  s2 ON v2.submission_id = s2.id
+            JOIN users        u1 ON s1.student_id    = u1.id
+            JOIN users        u2 ON s2.student_id    = u2.id
+            JOIN sentence_counts sc1 ON s1.student_id = sc1.student_id
+            JOIN sentence_counts sc2 ON s2.student_id = sc2.student_id
+            WHERE s1.task_id  = :task_id
+              AND s2.task_id  = :task_id
+              AND s1.id < s2.id
+              AND s1.is_deleted = false
+              AND s2.is_deleted = false
+              AND v1.type = 'sentence'
+              AND v2.type = 'sentence'
+            GROUP BY u1.name, u2.name, sc1.total_sentences, sc2.total_sentences
+        """)
+        return self.db.execute(
+            query, {"task_id": task_id, "threshold": threshold}
+        ).all()
 
     def get_collusion_pairs(self, task_id: UUID) -> list:
         """

@@ -20,11 +20,17 @@ from ...repositories.submission_repo import SubmissionRepository
 from ...repositories.vector_repo import VectorRepository
 from ...schemas.submission import (
     CollusionGroupResponse,
+    HeatmapEntry,
+    MySubmissionEntry,
     PlagiarismMatch,
     ReportEntry,
     SimilarityMatrixEntry,
     SubmissionResponse,
+    SubmissionStatusEntry,
+    TaskPublishRequest,
+    VerbatimMatch,
 )
+from ...schemas.classroom import TaskDetailFullResponse
 from ...services.classroom_service import ClassroomService
 from ...services.graph_service import GraphService
 from ...services.nlp_service import NLPService, get_nlp_service
@@ -85,7 +91,7 @@ def submit_assignment(
 
     service = PlagiarismService(db, nlp)
     try:
-        score, details, sentence_count = service.process_submission(
+        result = service.process_submission(
             text_content, submission.id, task_id
         )
     except ValueError as exc:
@@ -93,16 +99,21 @@ def submit_assignment(
         db.commit()
         raise HTTPException(status_code=400, detail=str(exc))
 
-    submission.overall_similarity_score = score
+    submission.overall_similarity_score = result.score
+    submission.verbatim_flag = result.verbatim_flag
     submission.status = "completed"
     db.commit()
 
     return SubmissionResponse(
         message="Assignment submitted and analyzed successfully",
         submission_id=submission.id,
-        plagiarism_score=f"{score}%",
-        matches_found=len(details),
-        sentences_processed=sentence_count,
+        plagiarism_score=f"{result.score}%",
+        matches_found=len(result.match_details),
+        sentences_processed=result.sentence_count,
+        verbatim_flag=result.verbatim_flag,
+        verbatim_matches=[
+            VerbatimMatch(**vm) for vm in result.verbatim_matches
+        ],
     )
 
 
@@ -194,7 +205,11 @@ def get_similarity_matrix(
     vector_repo = VectorRepository(db)
     matrix = vector_repo.get_similarity_matrix(task_id)
     return [
-        SimilarityMatrixEntry(pair=f"{m[0]} & {m[1]}", shared_sentences=m[2])
+        SimilarityMatrixEntry(
+            pair=f"{m.student_a} & {m.student_b}",
+            avg_similarity=round(m.avg_similarity * 100, 2),
+            shared_sentences=m.matching_sentences,
+        )
         for m in matrix
     ]
 
@@ -217,6 +232,206 @@ def get_submission_detail(
         )
         for m in matches
     ]
+
+
+@router.get("/heatmap/{task_id}", response_model=list[HeatmapEntry])
+def get_heatmap(
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "professor", "Unauthorized")
+    vector_repo = VectorRepository(db)
+    rows = vector_repo.get_heatmap_data(task_id)
+    return [
+        HeatmapEntry(
+            student_a=r.student_a,
+            student_b=r.student_b,
+            similarity=round(r.similarity, 2),
+            shared_sentences=r.shared_sentences,
+            total_sentences_a=r.total_sentences_a,
+            total_sentences_b=r.total_sentences_b,
+        )
+        for r in rows
+    ]
+
+
+@router.get("/status/{task_id}", response_model=list[SubmissionStatusEntry])
+def get_submission_status(
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "professor", "Unauthorized")
+
+    from ...models.classroom import ClassroomMembership
+    from ...models.submission import AssignmentTask as TaskModel, Submission
+    from ...models.user import User as UserModel
+
+    task = db.query(TaskModel).filter(
+        TaskModel.id == task_id, TaskModel.is_deleted == False  # noqa: E712
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    results = (
+        db.query(
+            UserModel.id.label("student_id"),
+            UserModel.name.label("student_name"),
+            Submission.status,
+            Submission.created_at.label("submitted_at"),
+            Submission.overall_similarity_score.label("plagiarism_score"),
+        )
+        .select_from(ClassroomMembership)
+        .join(UserModel, ClassroomMembership.student_id == UserModel.id)
+        .outerjoin(
+            Submission,
+            (Submission.task_id == task_id)
+            & (Submission.student_id == UserModel.id)
+            & (Submission.is_deleted == False),  # noqa: E712
+        )
+        .filter(
+            ClassroomMembership.classroom_id == task.classroom_id,
+            ClassroomMembership.is_deleted == False,  # noqa: E712
+        )
+        .all()
+    )
+
+    return [
+        SubmissionStatusEntry(
+            student_id=r.student_id,
+            student_name=r.student_name,
+            status=r.status or "not_submitted",
+            submitted_at=r.submitted_at,
+            plagiarism_score=r.plagiarism_score,
+        )
+        for r in results
+    ]
+
+
+@router.get("/task/{task_id}", response_model=TaskDetailFullResponse)
+def get_task_detail(
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from ...models.submission import AssignmentTask as TaskModel, Submission
+    from sqlalchemy import func
+
+    task = db.query(TaskModel).filter(
+        TaskModel.id == task_id, TaskModel.is_deleted == False  # noqa: E712
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    base = {
+        "task_id": task.id,
+        "title": task.title,
+        "description": task.description,
+        "assignment_code": task.assignment_code,
+        "due_date": task.due_date,
+        "is_published": task.is_published,
+        "has_pdf": task.assignment_pdf_path is not None,
+        "created_at": task.created_at,
+    }
+
+    if current_user.role == "professor":
+        stats = (
+            db.query(
+                func.count(Submission.id),
+                func.avg(Submission.overall_similarity_score),
+            )
+            .filter(
+                Submission.task_id == task_id,
+                Submission.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        base["submission_count"] = stats[0]
+        base["average_score"] = round(stats[1], 2) if stats[1] else None
+    else:
+        if not task.is_published:
+            raise HTTPException(status_code=404, detail="Task not found")
+        sub = (
+            db.query(Submission)
+            .filter(
+                Submission.task_id == task_id,
+                Submission.student_id == current_user.id,
+                Submission.is_deleted == False,  # noqa: E712
+            )
+            .first()
+        )
+        base["my_status"] = sub.status if sub else "not_submitted"
+        base["my_score"] = sub.overall_similarity_score if sub else None
+
+    return TaskDetailFullResponse(**base)
+
+
+@router.get("/my-submissions", response_model=list[MySubmissionEntry])
+def get_my_submissions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "student", "Only students can view their submissions")
+
+    from ...models.submission import AssignmentTask as TaskModel, Submission
+
+    results = (
+        db.query(
+            TaskModel.title.label("task_title"),
+            TaskModel.assignment_code.label("task_code"),
+            Submission.overall_similarity_score.label("score"),
+            Submission.status,
+            Submission.created_at.label("submitted_at"),
+        )
+        .join(TaskModel, Submission.task_id == TaskModel.id)
+        .filter(
+            Submission.student_id == current_user.id,
+            Submission.is_deleted == False,  # noqa: E712
+        )
+        .order_by(Submission.created_at.desc())
+        .all()
+    )
+
+    return [
+        MySubmissionEntry(
+            task_title=r.task_title,
+            task_code=r.task_code,
+            score=r.score,
+            status=r.status,
+            submitted_at=r.submitted_at,
+        )
+        for r in results
+    ]
+
+
+@router.patch("/task/{task_id}/publish")
+def publish_task(
+    task_id: UUID,
+    request: TaskPublishRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "professor", "Only professors can publish tasks")
+
+    from ...models.submission import AssignmentTask as TaskModel
+
+    task = db.query(TaskModel).filter(
+        TaskModel.id == task_id, TaskModel.is_deleted == False  # noqa: E712
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.classroom.professor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this task")
+
+    task.is_published = request.is_published
+    db.commit()
+
+    return {
+        "message": f"Task {'published' if request.is_published else 'unpublished'} successfully",
+        "task_id": str(task.id),
+        "is_published": task.is_published,
+    }
 
 
 @router.get("/collusion-groups/{task_id}", response_model=CollusionGroupResponse)

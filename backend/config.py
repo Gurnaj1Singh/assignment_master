@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     SBERT_MODEL_NAME: str = "all-mpnet-base-v2"
     SIMILARITY_THRESHOLD: float = 0.85
 
+    # OpenAI (LLM question generation)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

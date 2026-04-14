@@ -4,6 +4,7 @@ from .classroom import Classroom, ClassroomMembership
 from .submission import AssignmentTask, Submission
 from .text_vector import TextVector
 from .reference import ReferenceDocument, ReferenceVector
+from .question import GeneratedQuestion, StudentQuestionAssignment
 
 __all__ = [
     "Base",
@@ -17,4 +18,6 @@ __all__ = [
     "TextVector",
     "ReferenceDocument",
     "ReferenceVector",
+    "GeneratedQuestion",
+    "StudentQuestionAssignment",
 ]

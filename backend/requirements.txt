@@ -23,6 +23,7 @@ torch
 networkx
 numpy
 nltk
+openai
 
 # PDF Processing
 PyMuPDF

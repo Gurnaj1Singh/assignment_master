@@ -11,6 +11,7 @@ from ...schemas.classroom import (
     ClassroomCreateRequest,
     ClassroomMemberResponse,
     TaskCreateRequest,
+    TaskListEntry,
 )
 from ...services.classroom_service import ClassroomService
 from ..deps import get_current_user, require_role
@@ -71,6 +72,61 @@ def get_classroom_members(
     require_role(current_user, "professor", "Only professors can view classroom members.")
     service = ClassroomService(db)
     return service.get_classroom_members(classroom_id, current_user.id)
+
+
+@router.get("/{classroom_id}/tasks", response_model=list[TaskListEntry])
+def list_tasks(
+    classroom_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from ...models.submission import AssignmentTask, Submission
+    from sqlalchemy import func
+
+    service = ClassroomService(db)
+    classroom = service.classroom_repo.get_by_id(classroom_id)
+    if not classroom:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Classroom not found")
+
+    query = (
+        db.query(
+            AssignmentTask,
+            func.count(Submission.id).label("submission_count"),
+        )
+        .outerjoin(
+            Submission,
+            (Submission.task_id == AssignmentTask.id)
+            & (Submission.is_deleted == False),  # noqa: E712
+        )
+        .filter(
+            AssignmentTask.classroom_id == classroom_id,
+            AssignmentTask.is_deleted == False,  # noqa: E712
+        )
+        .group_by(AssignmentTask.id)
+        .order_by(AssignmentTask.created_at.desc())
+    )
+
+    # Students only see published tasks
+    if current_user.role == "student":
+        query = query.filter(AssignmentTask.is_published == True)  # noqa: E712
+
+    results = query.all()
+
+    return [
+        TaskListEntry(
+            task_id=task.id,
+            title=task.title,
+            description=task.description,
+            assignment_code=task.assignment_code,
+            due_date=task.due_date,
+            is_published=task.is_published,
+            has_pdf=task.assignment_pdf_path is not None,
+            submission_count=count,
+            created_at=task.created_at,
+        )
+        for task, count in results
+    ]
 
 
 @router.post("/{classroom_id}/tasks", status_code=status.HTTP_201_CREATED)

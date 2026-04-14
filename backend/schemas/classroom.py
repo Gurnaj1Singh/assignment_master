@@ -77,3 +77,37 @@ class TaskDetailResponse(BaseModel):
     is_published: bool
     has_pdf: bool          # True if professor has uploaded a question paper
     created_at: datetime
+
+
+class TaskListEntry(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    task_id: UUID
+    title: str
+    description: str | None
+    assignment_code: str
+    due_date: datetime | None
+    is_published: bool
+    has_pdf: bool
+    submission_count: int
+    created_at: datetime
+
+
+class TaskDetailFullResponse(BaseModel):
+    """Task detail with submission stats. Professor vs student view differs at API layer."""
+    model_config = ConfigDict(from_attributes=True)
+
+    task_id: UUID
+    title: str
+    description: str | None
+    assignment_code: str
+    due_date: datetime | None
+    is_published: bool
+    has_pdf: bool
+    created_at: datetime
+    # Professor-only fields (None for students)
+    submission_count: int | None = None
+    average_score: float | None = None
+    # Student-only fields (None for professors)
+    my_status: str | None = None
+    my_score: float | None = None

@@ -83,3 +83,18 @@ class ReferenceVectorRepository:
                 "threshold": threshold,
             },
         ).all()
+
+    def find_matching_reference(
+        self,
+        sentence_embedding: list[float],
+        task_id: UUID,
+        threshold: float = 0.85,
+    ) -> list:
+        """
+        Check whether a student sentence matches any reference corpus sentence.
+
+        Returns reference rows where cosine similarity exceeds threshold.
+        Empty list means no reference match (sentence is inter-student plagiarism).
+        Non-empty means the sentence paraphrases a known source.
+        """
+        return self.find_similar_to_sentence(sentence_embedding, task_id, threshold)
