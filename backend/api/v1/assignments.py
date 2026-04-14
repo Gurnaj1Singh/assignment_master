@@ -8,10 +8,11 @@ event loop.
 
 import os
 import uuid as uuid_mod
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from ...database import get_db
@@ -36,6 +37,7 @@ from ...services.graph_service import GraphService
 from ...services.nlp_service import NLPService, get_nlp_service
 from ...services.pdf_service import extract_text_from_pdf
 from ...services.plagiarism_service import PlagiarismService
+from ...middleware.rate_limiter import limiter, _get_user_id_or_ip
 from ..deps import get_current_user, require_role
 
 router = APIRouter()
@@ -52,7 +54,9 @@ os.makedirs(TASK_PDF_DIR, exist_ok=True)
 
 
 @router.post("/submit/{task_id}", response_model=SubmissionResponse)
+@limiter.limit("3/minute", key_func=_get_user_id_or_ip)
 def submit_assignment(
+    request: Request,
     task_id: UUID,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -64,6 +68,38 @@ def submit_assignment(
     SBERT inference does not block the event loop.
     """
     require_role(current_user, "student", "Only students can submit assignments")
+
+    # --- Deadline enforcement (5-minute grace period) ---
+    from ...models.submission import AssignmentTask as TaskModel, Submission
+
+    task = db.query(TaskModel).filter(
+        TaskModel.id == task_id, TaskModel.is_deleted == False  # noqa: E712
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if task.due_date:
+        grace = task.due_date + timedelta(minutes=5)
+        if datetime.now(timezone.utc) > grace:
+            raise HTTPException(
+                status_code=403, detail="Submission deadline has passed"
+            )
+
+    # --- Duplicate submission check ---
+    existing = (
+        db.query(Submission)
+        .filter(
+            Submission.task_id == task_id,
+            Submission.student_id == current_user.id,
+            Submission.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="You have already submitted for this task",
+        )
 
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files allowed")

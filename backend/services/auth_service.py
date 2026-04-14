@@ -2,20 +2,28 @@
 
 import logging
 import random
-from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..core.email import send_otp_email, validate_nitj_email
-from ..core.security import create_access_token, hash_password, verify_password
+from ..core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+    hash_password,
+    verify_password,
+)
 from ..models.user import User
+from ..repositories.otp_repo import OTPRepository
 from ..repositories.user_repo import UserRepository
 
 logger = logging.getLogger(__name__)
 
-# In-memory OTP store — migrate to Redis for multi-worker production
-_otp_store: dict[str, str] = {}
+# Temporary store for signup data between OTP send and verification.
+# Only holds pre-registration data (name, password_hash, role) until the
+# OTP is verified and the user row is created. Not security-critical —
+# the OTP itself is now persisted in the DB.
 _user_data_store: dict[str, dict] = {}
 
 
@@ -23,6 +31,7 @@ class AuthService:
     def __init__(self, db: Session):
         self.db = db
         self.user_repo = UserRepository(db)
+        self.otp_repo = OTPRepository(db)
 
     async def initiate_signup(
         self, name: str, email: str, password: str, role: str
@@ -38,7 +47,11 @@ class AuthService:
             )
 
         otp = str(random.randint(100000, 999999))
-        _otp_store[email] = otp
+
+        # Persist OTP in database (5-minute TTL)
+        self.otp_repo.upsert(email, otp, ttl_minutes=5)
+        self.db.commit()
+
         _user_data_store[email] = {
             "name": name,
             "password_hash": hash_password(password),
@@ -51,7 +64,7 @@ class AuthService:
     def verify_otp(self, email: str, code: str) -> User:
         email = email.lower()
 
-        if _otp_store.get(email) != code:
+        if not self.otp_repo.verify(email, code):
             raise HTTPException(
                 status_code=400, detail="Invalid or expired OTP."
             )
@@ -66,9 +79,10 @@ class AuthService:
             password_hash=data["password_hash"],
             role=data["role"],
         )
-        self.db.commit()
 
-        _otp_store.pop(email, None)
+        # Clean up OTP record and temp data
+        self.otp_repo.delete(email)
+        self.db.commit()
         _user_data_store.pop(email, None)
 
         return new_user
@@ -84,7 +98,42 @@ class AuthService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        token = create_access_token(
+        access_token = create_access_token(
+            data={
+                "sub": user.email,
+                "role": user.role,
+                "user_id": str(user.id),
+            }
+        )
+        refresh_token = create_refresh_token(
+            data={"sub": user.email, "user_id": str(user.id)}
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "role": user.role,
+        }
+
+    def refresh_access_token(self, refresh_token: str) -> dict:
+        """Validate a refresh token and issue a new access token."""
+        payload = decode_refresh_token(refresh_token)
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
+
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        new_access_token = create_access_token(
             data={
                 "sub": user.email,
                 "role": user.role,
@@ -93,7 +142,37 @@ class AuthService:
         )
 
         return {
-            "access_token": token,
+            "access_token": new_access_token,
             "token_type": "bearer",
-            "role": user.role,
         }
+
+    async def forgot_password(self, email: str) -> None:
+        """Send a password-reset OTP to the user's email."""
+        email = email.lower()
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            # Don't reveal whether the email exists
+            return
+
+        otp = str(random.randint(100000, 999999))
+        self.otp_repo.upsert(email, otp, ttl_minutes=5)
+        self.db.commit()
+
+        await send_otp_email(email, otp)
+
+    def reset_password(self, email: str, code: str, new_password: str) -> None:
+        """Verify OTP and set a new password."""
+        email = email.lower()
+
+        if not self.otp_repo.verify(email, code):
+            raise HTTPException(
+                status_code=400, detail="Invalid or expired OTP."
+            )
+
+        user = self.user_repo.get_by_email(email)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
+
+        user.password_hash = hash_password(new_password)
+        self.otp_repo.delete(email)
+        self.db.commit()

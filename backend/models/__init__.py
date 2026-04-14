@@ -5,6 +5,7 @@ from .submission import AssignmentTask, Submission
 from .text_vector import TextVector
 from .reference import ReferenceDocument, ReferenceVector
 from .question import GeneratedQuestion, StudentQuestionAssignment
+from .otp import OTPRecord
 
 __all__ = [
     "Base",
@@ -20,4 +21,5 @@ __all__ = [
     "ReferenceVector",
     "GeneratedQuestion",
     "StudentQuestionAssignment",
+    "OTPRecord",
 ]

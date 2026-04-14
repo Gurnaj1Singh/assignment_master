@@ -1,12 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 
 from .api.v1.router import v1_router
-from .database import init_db
+from .config import settings
+from .database import engine, init_db
 from .middleware.exception_handler import RequestIDMiddleware, register_exception_handlers
+from .middleware.rate_limiter import limiter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,15 +31,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Assignment Master API",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
+# --- Rate limiter ---
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # --- Middleware (order matters: outermost runs first) ---
 app.add_middleware(RequestIDMiddleware)
+_cors_origins = ["*"] if settings.CORS_ALLOW_ALL else [settings.FRONTEND_URL]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: restrict to frontend URL in production
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,3 +60,20 @@ app.include_router(v1_router, prefix="/api/v1")
 @app.get("/")
 def read_root():
     return {"status": "Assignment Master Backend is Online"}
+
+
+@app.get("/health")
+def health_check():
+    """Health check — verifies DB connectivity."""
+    db_status = "connected"
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "disconnected"
+
+    return {
+        "status": "healthy" if db_status == "connected" else "unhealthy",
+        "db": db_status,
+        "version": "2.0.0",
+    }

@@ -28,6 +28,9 @@ openai
 # PDF Processing
 PyMuPDF
 
+# Rate Limiting
+slowapi
+
 # Testing & Utilities
 requests
 pytest
