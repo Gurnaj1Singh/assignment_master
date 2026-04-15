@@ -26,25 +26,51 @@ def validate_nitj_email(email: str) -> bool:
     return email.endswith("@nitj.ac.in")
 
 
-async def send_otp_email(email_to: str, otp: str) -> None:
-    """Send OTP verification email."""
-    logger.info("Sending OTP to %s", email_to)
+async def send_otp_email(
+    email_to: str, otp: str, purpose: str = "signup"
+) -> None:
+    """Send OTP verification email.
 
-    html = f"""
-    <html><body>
-        <p>Hi,</p>
-        <p>Thank you for registering for <b>Assignment Master</b>.</p>
-        <p>Your verification code is: <b>{otp}</b></p>
-        <p>This code will expire in 10 minutes.</p>
-    </body></html>
+    Args:
+        email_to: Recipient address.
+        otp: The 6-digit code.
+        purpose: Either "signup" or "reset" — controls email copy.
     """
+    logger.info("Sending %s OTP to %s", purpose, email_to)
+
+    if purpose == "reset":
+        subject = "Assignment Master — Password Reset Code"
+        html = f"""
+        <html><body>
+            <p>Hi,</p>
+            <p>We received a request to reset your <b>Assignment Master</b> password.</p>
+            <p>Your password-reset code is: <b>{otp}</b></p>
+            <p>This code will expire in <b>5 minutes</b>.</p>
+            <p>If you did not request this, you can safely ignore this email.</p>
+        </body></html>
+        """
+    else:
+        subject = "Assignment Master — Verification Code"
+        html = f"""
+        <html><body>
+            <p>Hi,</p>
+            <p>Thank you for registering for <b>Assignment Master</b>.</p>
+            <p>Your verification code is: <b>{otp}</b></p>
+            <p>This code will expire in <b>5 minutes</b>.</p>
+        </body></html>
+        """
 
     message = MessageSchema(
-        subject="Assignment Master Verification Code",
+        subject=subject,
         recipients=[email_to],
         body=html,
         subtype=MessageType.html,
     )
 
-    fm = FastMail(mail_conf)
-    await fm.send_message(message)
+    try:
+        fm = FastMail(mail_conf)
+        await fm.send_message(message)
+        logger.info("OTP email sent successfully to %s", email_to)
+    except Exception:
+        logger.exception("Failed to send OTP email to %s", email_to)
+        raise

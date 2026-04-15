@@ -1,5 +1,6 @@
 """Repository for OTP persistence — store, verify, and clean up OTP records."""
 
+import hmac
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
@@ -32,7 +33,7 @@ class OTPRepository:
         record = self.db.query(OTPRecord).filter(OTPRecord.email == email).first()
         if not record:
             return False
-        if record.code != code:
+        if not hmac.compare_digest(record.code, code):
             return False
         if record.expires_at < datetime.now(timezone.utc):
             return False

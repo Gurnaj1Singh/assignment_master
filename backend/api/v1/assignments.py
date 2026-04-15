@@ -314,6 +314,7 @@ def get_submission_status(
         db.query(
             UserModel.id.label("student_id"),
             UserModel.name.label("student_name"),
+            Submission.id.label("submission_id"),
             Submission.status,
             Submission.created_at.label("submitted_at"),
             Submission.overall_similarity_score.label("plagiarism_score"),
@@ -337,6 +338,7 @@ def get_submission_status(
         SubmissionStatusEntry(
             student_id=r.student_id,
             student_name=r.student_name,
+            submission_id=r.submission_id,
             status=r.status or "not_submitted",
             submitted_at=r.submitted_at,
             plagiarism_score=r.plagiarism_score,

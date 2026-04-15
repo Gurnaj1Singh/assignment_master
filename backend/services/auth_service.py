@@ -1,7 +1,7 @@
 """Authentication business logic — OTP management, user creation, login."""
 
 import logging
-import random
+import secrets
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -46,7 +46,7 @@ class AuthService:
                 status_code=400, detail="Only @nitj.ac.in allowed"
             )
 
-        otp = str(random.randint(100000, 999999))
+        otp = f"{secrets.randbelow(1_000_000):06d}"
 
         # Persist OTP in database (5-minute TTL)
         self.otp_repo.upsert(email, otp, ttl_minutes=5)
@@ -58,7 +58,14 @@ class AuthService:
             "role": role,
         }
 
-        await send_otp_email(email, otp)
+        try:
+            await send_otp_email(email, otp, purpose="signup")
+        except Exception:
+            logger.exception("SMTP failure during signup for %s", email)
+            raise HTTPException(
+                status_code=502,
+                detail="Unable to send verification email. Please try again later.",
+            )
         return otp
 
     def verify_otp(self, email: str, code: str) -> User:
@@ -152,13 +159,21 @@ class AuthService:
         user = self.user_repo.get_by_email(email)
         if not user:
             # Don't reveal whether the email exists
+            logger.info("Forgot-password request for unknown email: %s", email)
             return
 
-        otp = str(random.randint(100000, 999999))
+        otp = f"{secrets.randbelow(1_000_000):06d}"
         self.otp_repo.upsert(email, otp, ttl_minutes=5)
         self.db.commit()
 
-        await send_otp_email(email, otp)
+        try:
+            await send_otp_email(email, otp, purpose="reset")
+        except Exception:
+            logger.exception("SMTP failure during forgot-password for %s", email)
+            raise HTTPException(
+                status_code=502,
+                detail="Unable to send reset email. Please try again later.",
+            )
 
     def reset_password(self, email: str, code: str, new_password: str) -> None:
         """Verify OTP and set a new password."""

@@ -10,7 +10,7 @@ import logging
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from openai import OpenAI, APIConnectionError, RateLimitError, APITimeoutError
+from openai import OpenAI, APIConnectionError, AuthenticationError, RateLimitError, APITimeoutError
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -80,6 +80,12 @@ class LLMService:
             raise HTTPException(
                 status_code=status.HTTP_504_GATEWAY_TIMEOUT,
                 detail="LLM request timed out. Please try again.",
+            )
+        except AuthenticationError:
+            logger.error("OpenAI API key is invalid or missing")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="LLM service is not configured. Please set a valid OpenAI API key.",
             )
         except APIConnectionError:
             logger.error("OpenAI API connection error during question generation")

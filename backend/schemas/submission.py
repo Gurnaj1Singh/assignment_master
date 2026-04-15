@@ -71,6 +71,7 @@ class SubmissionStatusEntry(BaseModel):
 
     student_id: UUID
     student_name: str
+    submission_id: UUID | None = None
     status: str | None
     submitted_at: datetime | None
     plagiarism_score: float | None

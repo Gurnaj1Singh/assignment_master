@@ -1,45 +1,16 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/login';
-import ProfessorDashboard from './pages/ProfessorDashboard';
-import StudentDashboard from './pages/StudentDashboard';
+import { useRoutes, Navigate } from 'react-router-dom'
+import { routes } from './routes'
+import useAuthStore from '@/stores/authStore'
 
-// Simple check to see if user is logged in
-const ProtectedRoute = ({ children, allowedRole }) => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+// Root-level auth redirect: if already logged in and hits /login, go to dashboard
+function AuthRedirect({ children }) {
+  const { isAuthenticated, user } = useAuthStore()
 
-  if (!token) return <Navigate to="/" />;
-  if (allowedRole && role !== allowedRole) return <Navigate to="/" />;
-  
-  return children;
-};
-
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        
-        <Route 
-          path="/professor" 
-          element={
-            <ProtectedRoute allowedRole="professor">
-              <ProfessorDashboard />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/student" 
-          element={
-            <ProtectedRoute allowedRole="student">
-              <StudentDashboard />
-            </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </Router>
-  );
+  // We let individual routes handle their redirects
+  // This component is just the route renderer
+  return useRoutes(routes)
 }
 
-export default App;
+export default function App() {
+  return <AuthRedirect />
+}

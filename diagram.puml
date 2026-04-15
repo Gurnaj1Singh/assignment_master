@@ -1,0 +1,200 @@
+@startuml Assignment_Master_ERD
+
+' ══════════════════════════════════════════════════════════════════
+'  LAYOUT
+' ══════════════════════════════════════════════════════════════════
+left to right direction
+scale max 1748 x 1050
+skinparam linetype ortho
+skinparam nodesep         35
+skinparam ranksep         55
+skinparam padding         6
+skinparam backgroundColor #FFFFFF
+skinparam defaultTextAlignment left
+skinparam shadowing       false
+skinparam roundCorner     10
+
+' ── Package chrome ──────────────────────────────────────────────
+skinparam package {
+    BackgroundColor       #FAFAFA
+    BorderColor           #9E9E9E
+    BorderThickness       2
+    FontSize              12
+    FontStyle             bold
+    FontColor             #212121
+}
+
+' ── Entity boxes ────────────────────────────────────────────────
+skinparam entity {
+    BackgroundColor       #FFFFFF
+    BorderColor           #9E9E9E
+    BorderThickness       1.5
+    FontSize              13
+    FontStyle             bold
+    FontColor             #1A1A1A
+    AttributeFontSize     11
+    AttributeFontStyle    plain
+    AttributeFontColor    #2C3E50
+}
+
+' ── Relationship lines ──────────────────────────────────────────
+skinparam arrow {
+    Color                 #546E7A
+    Thickness             1.6
+    FontSize              9
+    FontColor             #455A64
+}
+
+skinparam legend {
+    BackgroundColor       #FAFAFA
+    BorderColor           #BDBDBD
+    FontSize              10
+}
+
+title <size:17><b>Assignment Master — Production Database ERD</b></size>\n<size:10><color:#78909C>NIT Jalandhar  ·  AI Plagiarism Detection  ·  pgvector + SBERT  ·  Soft Deletes + Audit Trail</color></size>
+
+
+' ══════════════════════════════════════════════════════════════════
+'  PACKAGE 1 — IDENTITY & ACCESS                       #E3F2FD
+' ══════════════════════════════════════════════════════════════════
+package "  Identity & Access  " #E3F2FD {
+
+    entity "**users**" as users #BBDEFB {
+        <color:#0D47A1><b>PK  id</b></color>              : UUID
+        ==
+        *  name                        : VARCHAR(100)
+        *  email                       : VARCHAR(255)       <<UNIQUE  IDX>>
+        *  password_hash               : TEXT
+        *  role                        : ENUM(student, professor)
+        --
+        <i><color:#1565C0>/ TimestampMixin</color>  ·  <color:#B71C1C>/ SoftDeleteMixin</color></i>
+    }
+
+}
+
+
+' ══════════════════════════════════════════════════════════════════
+'  PACKAGE 2 — ACADEMIC STRUCTURE                      #E8F5E9
+' ══════════════════════════════════════════════════════════════════
+package "  Academic Structure  " #E8F5E9 {
+
+    entity "**classrooms**" as classrooms #C8E6C9 {
+        <color:#0D47A1><b>PK  id</b></color>              : UUID
+        ==
+        *  <color:#E65100><b>FK  professor_id</b></color>  : UUID
+        *  class_name                  : VARCHAR(200)
+        *  class_code                  : VARCHAR(10)        <<UNIQUE>>
+        --
+        <i><color:#1565C0>/ TimestampMixin</color>  ·  <color:#B71C1C>/ SoftDeleteMixin</color></i>
+    }
+
+    entity "**classroom_memberships**" as memberships #C8E6C9 {
+        <color:#0D47A1><b>PK  id</b></color>              : BIGINT              <<autoincrement>>
+        ==
+        *  <color:#E65100><b>FK  classroom_id</b></color>  : UUID
+        *  <color:#E65100><b>FK  student_id</b></color>    : UUID
+        *  joined_at                   : TIMESTAMPTZ
+        --
+        <i><color:#1565C0>/ TimestampMixin</color>  ·  <color:#B71C1C>/ SoftDeleteMixin</color></i>
+        ....
+        <color:#C62828><b>⚡</b></color> <i>PARTIAL UNIQUE  (classroom_id, student_id)</i>
+        <color:#9E9E9E><i>           WHERE is_deleted = FALSE</i></color>
+    }
+
+}
+
+
+' ══════════════════════════════════════════════════════════════════
+'  PACKAGE 3 — ASSIGNMENT WORKFLOW                     #F3E5F5
+' ══════════════════════════════════════════════════════════════════
+package "  Assignment Workflow  " #F3E5F5 {
+
+    entity "**assignment_tasks**" as tasks #E1BEE7 {
+        <color:#0D47A1><b>PK  id</b></color>              : UUID
+        ==
+        *  <color:#E65100><b>FK  classroom_id</b></color>  : UUID
+        *  title                       : VARCHAR(300)
+        ~  description                 : TEXT
+        *  assignment_code             : VARCHAR(10)        <<UNIQUE>>
+        ~  pdf_path                    : VARCHAR(500)
+        ~  due_date                    : TIMESTAMPTZ
+        *  is_published                : BOOLEAN            <<default=false>>
+        --
+        <i><color:#1565C0>/ TimestampMixin</color>  ·  <color:#B71C1C>/ SoftDeleteMixin</color></i>
+    }
+
+}
+
+
+' ══════════════════════════════════════════════════════════════════
+'  PACKAGE 4 — AI & VECTOR INTELLIGENCE                #FBE9E7
+' ══════════════════════════════════════════════════════════════════
+package "  AI & Vector Intelligence  " #FBE9E7 {
+
+    entity "**submissions**" as submissions #FFCCBC {
+        <color:#0D47A1><b>PK  id</b></color>              : UUID
+        ==
+        *  <color:#E65100><b>FK  task_id</b></color>       : UUID
+        *  <color:#E65100><b>FK  student_id</b></color>    : UUID
+        *  similarity_score            : FLOAT              <<0.0 – 100.0>>
+        *  status                      : ENUM(pending..failed)
+        *  file_path                   : VARCHAR(500)
+        *  verbatim_flag               : BOOLEAN
+        --
+        <i><color:#1565C0>/ TimestampMixin</color>  ·  <color:#B71C1C>/ SoftDeleteMixin</color></i>
+        ....
+        <color:#C62828><b>⚡</b></color> <i>UNIQUE  (task_id, student_id)</i>
+        <color:#C62828><b>⚡</b></color> <i>CHECK   score BETWEEN 0.0 AND 100.0</i>
+    }
+
+    entity "**text_vectors**" as vectors #FFCCBC {
+        <color:#0D47A1><b>PK  id</b></color>              : BIGINT              <<autoincrement>>
+        ==
+        *  <color:#E65100><b>FK  submission_id</b></color> : UUID
+        *  content_chunk               : TEXT
+        *  embedding                   : VECTOR(768)        <<SBERT · HNSW IDX>>
+        *  type                        : ENUM(sentence, paragraph)
+        *  seq_order                   : INTEGER
+        --
+        <color:#757575><i>No Mixins — append-only, CASCADE lifecycle</i></color>
+        ....
+        <color:#C62828><b>⚡</b></color> <i>HNSW IDX  embedding  (cosine  <=>)</i>
+        <color:#C62828><b>⚡</b></color> <i>COMPOSITE (submission_id, type)</i>
+        <color:#C62828><b>⚡</b></color> <i>COMPOSITE (submission_id, seq_order)</i>
+    }
+
+}
+
+
+' ══════════════════════════════════════════════════════════════════
+'  RELATIONSHIPS — Crow's Foot · Orthogonal
+' ══════════════════════════════════════════════════════════════════
+users            ||--|{  classrooms    : "1:N  Owns"
+users            ||--|{  memberships   : "1:N  Enrolled"
+classrooms       ||--|{  memberships   : "1:N  Members"
+classrooms       ||--|{  tasks         : "1:N  Posts"
+tasks            ||--|{  submissions   : "1:N  Receives"
+users            ||--|{  submissions   : "1:N  Submits"
+submissions      ||--|{  vectors       : "1:N  Generates"
+
+
+' ══════════════════════════════════════════════════════════════════
+'  LEGEND
+' ══════════════════════════════════════════════════════════════════
+legend bottom right
+  |=  Marker                              |=  Meaning                        |
+  | <color:#0D47A1><b>PK</b></color>      | Primary Key                      |
+  | <color:#E65100><b>FK</b></color>      | Foreign Key  (→ ref table)       |
+  | <b>*</b>                              | NOT NULL                          |
+  | <b>~</b>                              | Nullable                          |
+  | <color:#1565C0>/</color>              | TimestampMixin column             |
+  | <color:#B71C1C>/</color>              | SoftDeleteMixin column            |
+  | <color:#C62828><b>⚡</b></color>      | DB index or constraint            |
+  | ||--|{                                | One-to-Many (Crow's Foot)         |
+  | <#E3F2FD> Blue                        | Identity & Access                 |
+  | <#E8F5E9> Green                       | Academic Structure                |
+  | <#F3E5F5> Purple                      | Assignment Workflow               |
+  | <#FBE9E7> Orange                      | AI & Vector Intelligence          |
+endlegend
+
+@enduml

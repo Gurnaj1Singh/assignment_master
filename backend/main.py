@@ -41,7 +41,18 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # --- Middleware (order matters: outermost runs first) ---
 app.add_middleware(RequestIDMiddleware)
-_cors_origins = ["*"] if settings.CORS_ALLOW_ALL else [settings.FRONTEND_URL]
+if settings.CORS_ALLOW_ALL:
+    _cors_origins = ["*"]
+else:
+    # Allow both localhost and 127.0.0.1 variants since browsers treat them
+    # as different origins.
+    from urllib.parse import urlparse
+    _parsed = urlparse(settings.FRONTEND_URL)
+    _cors_origins = [settings.FRONTEND_URL]
+    if _parsed.hostname == "localhost":
+        _cors_origins.append(settings.FRONTEND_URL.replace("localhost", "127.0.0.1"))
+    elif _parsed.hostname == "127.0.0.1":
+        _cors_origins.append(settings.FRONTEND_URL.replace("127.0.0.1", "localhost"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
