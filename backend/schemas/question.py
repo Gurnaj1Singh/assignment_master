@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 class GenerateRequest(BaseModel):
     """Optional parameters for question generation."""
     count: int = Field(default=100, ge=1, le=200)
+    provider: str | None = Field(
+        default=None,
+        description="LLM provider: 'openai' or 'ollama'. Defaults to server config.",
+    )
 
 
 class QuestionResponse(BaseModel):

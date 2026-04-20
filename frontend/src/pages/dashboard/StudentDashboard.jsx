@@ -87,9 +87,9 @@ export default function StudentDashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {classrooms.map((c) => (
             <Card
-              key={c.classroom_id}
+              key={c.class_id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/student/classroom/${c.classroom_id}`)}
+              onClick={() => navigate(`/student/classroom/${c.class_id}`)}
             >
               <CardHeader className="pb-2">
                 <CardTitle className="text-base leading-snug">{c.class_name}</CardTitle>

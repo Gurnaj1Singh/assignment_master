@@ -40,6 +40,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
@@ -448,6 +455,7 @@ function QuestionsTab({ taskId }) {
   const [selected, setSelected] = useState(new Set())
   const [distributeOpen, setDistributeOpen] = useState(false)
   const [numPerStudent, setNumPerStudent] = useState(5)
+  const [llmProvider, setLlmProvider] = useState('ollama')
 
   const { data: questions = [], isLoading: loadingQ } = useQuery({
     queryKey: ['questions', taskId],
@@ -465,7 +473,7 @@ function QuestionsTab({ taskId }) {
   async function handleGenerate() {
     setGenerating(true)
     try {
-      const res = await generateQuestions(taskId)
+      const res = await generateQuestions(taskId, llmProvider)
       toast.success(`${res.data.length} questions generated.`)
       const initialSelected = new Set(
         res.data.filter((q) => q.is_selected).map((q) => q.question_id)
@@ -525,6 +533,16 @@ function QuestionsTab({ taskId }) {
     <div className="space-y-4 mt-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
+        <Select value={llmProvider} onValueChange={setLlmProvider}>
+          <SelectTrigger size="sm" className="w-[130px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ollama">Ollama (Local)</SelectItem>
+            <SelectItem value="openai">OpenAI</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           onClick={handleGenerate}
           disabled={generating}

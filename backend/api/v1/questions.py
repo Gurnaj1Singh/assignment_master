@@ -31,6 +31,7 @@ router = APIRouter()
 @router.post("/generate/{task_id}", response_model=list[QuestionResponse], status_code=201)
 def generate_questions(
     task_id: UUID,
+    body: GenerateRequest | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     nlp: NLPService = Depends(get_nlp_service),
@@ -39,7 +40,10 @@ def generate_questions(
     Professor triggers LLM question generation from reference material.
 
     Retrieves all paragraph embeddings for the task's reference corpus,
-    builds a RAG prompt, and generates 100 diverse questions via GPT.
+    builds a RAG prompt, and generates 100 diverse deep-thinking questions.
+
+    Accepts optional JSON body with `provider` ("openai" or "ollama")
+    to override the server default.
     """
     require_role(current_user, "professor", "Only professors can generate questions.")
 
@@ -47,8 +51,10 @@ def generate_questions(
     service = QuestionDistributionService(db)
     service._validate_task_ownership(task_id, current_user.id)
 
+    provider = body.provider if body else None
+
     llm = LLMService(db)
-    questions = llm.generate_questions(task_id=task_id, nlp_service=nlp)
+    questions = llm.generate_questions(task_id=task_id, nlp_service=nlp, provider=provider)
 
     return [
         QuestionResponse(

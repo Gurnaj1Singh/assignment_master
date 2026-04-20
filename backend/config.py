@@ -30,9 +30,16 @@ class Settings(BaseSettings):
     SBERT_MODEL_NAME: str = "all-mpnet-base-v2"
     SIMILARITY_THRESHOLD: float = 0.85
 
-    # OpenAI (LLM question generation)
+    # LLM question generation
+    LLM_PROVIDER: str = "openai"  # "openai" or "ollama"
+
+    # OpenAI settings
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
+
+    # Ollama settings (local GPU inference)
+    OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
+    OLLAMA_MODEL: str = "qwen3:1.7b"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,7 +1,7 @@
 import client from './client'
 
-export const generateQuestions = (taskId) =>
-  client.post(`/questions/generate/${taskId}`)
+export const generateQuestions = (taskId, provider = null) =>
+  client.post(`/questions/generate/${taskId}`, provider ? { provider } : {})
 
 export const listQuestions = (taskId) =>
   client.get(`/questions/list/${taskId}`)
