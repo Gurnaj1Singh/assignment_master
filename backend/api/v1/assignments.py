@@ -8,7 +8,7 @@ event loop.
 
 import os
 import uuid as uuid_mod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -22,6 +22,7 @@ from ...repositories.vector_repo import VectorRepository
 from ...schemas.submission import (
     CollusionGroupResponse,
     HeatmapEntry,
+    LateDecisionRequest,
     MySubmissionEntry,
     PlagiarismMatch,
     ReportEntry,
@@ -69,7 +70,7 @@ def submit_assignment(
     """
     require_role(current_user, "student", "Only students can submit assignments")
 
-    # --- Deadline enforcement (5-minute grace period) ---
+    # --- Deadline check: late submissions are allowed but flagged for review ---
     from ...models.submission import AssignmentTask as TaskModel, Submission
 
     task = db.query(TaskModel).filter(
@@ -78,12 +79,8 @@ def submit_assignment(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if task.due_date:
-        grace = task.due_date + timedelta(minutes=5)
-        if datetime.now(timezone.utc) > grace:
-            raise HTTPException(
-                status_code=403, detail="Submission deadline has passed"
-            )
+    is_late = bool(task.due_date and datetime.now(timezone.utc) > task.due_date)
+    late_status = "pending_review" if is_late else "on_time"
 
     # --- Duplicate submission check ---
     existing = (
@@ -122,6 +119,7 @@ def submit_assignment(
         student_id=current_user.id,
         file_path=file_path,
         status="processing",
+        late_status=late_status,
     )
     db.flush()
 
@@ -140,8 +138,13 @@ def submit_assignment(
     submission.status = "completed"
     db.commit()
 
+    msg = (
+        "Assignment submitted after the deadline — pending professor review."
+        if is_late
+        else "Assignment submitted and analyzed successfully"
+    )
     return SubmissionResponse(
-        message="Assignment submitted and analyzed successfully",
+        message=msg,
         submission_id=submission.id,
         plagiarism_score=f"{result.score}%",
         matches_found=len(result.match_details),
@@ -150,6 +153,7 @@ def submit_assignment(
         verbatim_matches=[
             VerbatimMatch(**vm) for vm in result.verbatim_matches
         ],
+        late_status=submission.late_status,
     )
 
 
@@ -318,6 +322,7 @@ def get_submission_status(
             Submission.status,
             Submission.created_at.label("submitted_at"),
             Submission.overall_similarity_score.label("plagiarism_score"),
+            Submission.late_status.label("late_status"),
         )
         .select_from(ClassroomMembership)
         .join(UserModel, ClassroomMembership.student_id == UserModel.id)
@@ -342,6 +347,7 @@ def get_submission_status(
             status=r.status or "not_submitted",
             submitted_at=r.submitted_at,
             plagiarism_score=r.plagiarism_score,
+            late_status=r.late_status,
         )
         for r in results
     ]
@@ -387,6 +393,15 @@ def get_task_detail(
         )
         base["submission_count"] = stats[0]
         base["average_score"] = round(stats[1], 2) if stats[1] else None
+        base["pending_late_count"] = (
+            db.query(func.count(Submission.id))
+            .filter(
+                Submission.task_id == task_id,
+                Submission.is_deleted == False,  # noqa: E712
+                Submission.late_status == "pending_review",
+            )
+            .scalar()
+        )
     else:
         if not task.is_published:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -401,6 +416,8 @@ def get_task_detail(
         )
         base["my_status"] = sub.status if sub else "not_submitted"
         base["my_score"] = sub.overall_similarity_score if sub else None
+        base["my_late_status"] = sub.late_status if sub else None
+        base["my_submitted_at"] = sub.created_at if sub else None
 
     return TaskDetailFullResponse(**base)
 
@@ -416,11 +433,13 @@ def get_my_submissions(
 
     results = (
         db.query(
+            TaskModel.id.label("task_id"),
             TaskModel.title.label("task_title"),
             TaskModel.assignment_code.label("task_code"),
             Submission.overall_similarity_score.label("score"),
             Submission.status,
             Submission.created_at.label("submitted_at"),
+            Submission.late_status.label("late_status"),
         )
         .join(TaskModel, Submission.task_id == TaskModel.id)
         .filter(
@@ -433,11 +452,13 @@ def get_my_submissions(
 
     return [
         MySubmissionEntry(
+            task_id=r.task_id,
             task_title=r.task_title,
             task_code=r.task_code,
             score=r.score,
             status=r.status,
             submitted_at=r.submitted_at,
+            late_status=r.late_status,
         )
         for r in results
     ]
@@ -469,6 +490,56 @@ def publish_task(
         "message": f"Task {'published' if request.is_published else 'unpublished'} successfully",
         "task_id": str(task.id),
         "is_published": task.is_published,
+    }
+
+
+@router.patch("/submission/{submission_id}/late-decision")
+def late_decision(
+    submission_id: UUID,
+    request: LateDecisionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Professor accepts or rejects a late submission.
+    Only valid while late_status == 'pending_review'.
+    """
+    require_role(current_user, "professor", "Only professors can decide on late submissions")
+
+    if request.action not in ("accept", "reject"):
+        raise HTTPException(status_code=400, detail="action must be 'accept' or 'reject'")
+
+    from ...models.submission import AssignmentTask as TaskModel, Submission
+
+    submission = (
+        db.query(Submission)
+        .filter(
+            Submission.id == submission_id,
+            Submission.is_deleted == False,  # noqa: E712
+        )
+        .first()
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    task = db.query(TaskModel).filter(TaskModel.id == submission.task_id).first()
+    if not task or task.classroom.professor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this submission's task")
+
+    if submission.late_status != "pending_review":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Submission is not pending review (status={submission.late_status})",
+        )
+
+    submission.late_status = "accepted" if request.action == "accept" else "rejected"
+    submission.late_decision_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return {
+        "message": f"Late submission {submission.late_status}.",
+        "submission_id": str(submission.id),
+        "late_status": submission.late_status,
     }
 
 

@@ -261,13 +261,17 @@ function TasksTab({ classroomId, isProfessor }) {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: rawTasks = [], isLoading } = useQuery({
     queryKey: ['classroom-tasks', classroomId],
     queryFn: async () => {
       const res = await getClassroomTasks(classroomId)
       return res.data
     },
   })
+
+  // Belt-and-suspenders: backend already filters drafts for students, but
+  // hide them client-side too in case of stale cache after a role switch.
+  const tasks = isProfessor ? rawTasks : rawTasks.filter((t) => t.is_published)
 
   const basePath = isProfessor ? '/professor' : '/student'
 

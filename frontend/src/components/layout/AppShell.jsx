@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   LayoutDashboard,
@@ -108,11 +109,15 @@ function SidebarContent({ navItems, user, onLogout, onNavClick }) {
 export default function AppShell({ children }) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [mobileOpen, setMobileOpen] = useState(false)
   const isProfessor = user?.role === 'professor'
 
   function handleLogout() {
     logout()
+    // Drop cached queries so the next user (potentially a different role)
+    // doesn't see stale data — e.g. drafts from a previous professor session.
+    qc.clear()
     navigate('/login')
   }
 

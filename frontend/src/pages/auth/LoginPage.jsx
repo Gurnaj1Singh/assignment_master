@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { BookOpen, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ import useAuthStore from '@/stores/authStore'
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const qc = useQueryClient()
   const setAuth = useAuthStore((s) => s.login)
 
   const {
@@ -26,6 +28,10 @@ export default function LoginPage() {
     try {
       const { data } = await login({ email, password })
       // data: { access_token, refresh_token, token_type, role }
+      // Drop any cached queries from a previous session before populating
+      // the new identity — prevents drafts from a prior professor login
+      // from briefly appearing under a student account.
+      qc.clear()
       setAuth(
         { email, role: data.role, name: '' }, // name not in token response
         data.access_token,

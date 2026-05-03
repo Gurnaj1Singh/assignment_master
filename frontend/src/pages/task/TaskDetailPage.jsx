@@ -34,6 +34,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -68,7 +69,9 @@ import {
   getSubmissionStatus,
   getMySubmissions,
   getSubmissionDetail,
+  decideLateSubmission,
 } from '@/api/assignments'
+import { updateTaskDeadline } from '@/api/classrooms'
 import {
   uploadReference,
   listReferences,
@@ -112,6 +115,122 @@ function StatusBadge({ status }) {
       <Icon className={`h-3 w-3 ${status === 'processing' ? 'animate-spin' : ''}`} />
       {label}
     </Badge>
+  )
+}
+
+function LateBadge({ lateStatus }) {
+  if (!lateStatus || lateStatus === 'on_time') return null
+  const map = {
+    pending_review: { label: 'Late — Pending', variant: 'secondary' },
+    accepted:       { label: 'Late — Accepted', variant: 'default' },
+    rejected:       { label: 'Late — Rejected', variant: 'destructive' },
+  }
+  const { label, variant } = map[lateStatus] ?? map.pending_review
+  return (
+    <Badge variant={variant} className="text-xs gap-1">
+      <AlertTriangle className="h-3 w-3" />
+      {label}
+    </Badge>
+  )
+}
+
+// ── Deadline Editor (Professor) ──────────────────────────────────────────────
+function DeadlineEditor({ taskId, dueDate }) {
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+
+  // Convert ISO → "YYYY-MM-DDTHH:mm" suitable for <input type="datetime-local">
+  const initial = dueDate ? toLocalInput(dueDate) : ''
+  const [value, setValue] = useState(initial)
+
+  const mutation = useMutation({
+    mutationFn: (iso) => updateTaskDeadline(taskId, iso),
+    onSuccess: () => {
+      toast.success('Deadline updated.')
+      qc.invalidateQueries({ queryKey: ['task', taskId] })
+      setOpen(false)
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.detail ?? 'Failed to update deadline'),
+  })
+
+  function handleSave() {
+    // Convert local datetime input → ISO with offset
+    const iso = value ? new Date(value).toISOString() : null
+    mutation.mutate(iso)
+  }
+
+  function handleClear() {
+    mutation.mutate(null)
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setValue(dueDate ? toLocalInput(dueDate) : '')
+          setOpen(true)
+        }}
+      >
+        <Clock className="h-4 w-4 mr-2" />
+        {dueDate ? 'Change Deadline' : 'Set Deadline'}
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Update Deadline</DialogTitle>
+            <DialogDescription>
+              Late submissions are allowed but will be flagged for your review.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="due_date">Due date &amp; time</Label>
+            <Input
+              id="due_date"
+              type="datetime-local"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            {dueDate && (
+              <Button
+                variant="ghost"
+                onClick={handleClear}
+                disabled={mutation.isPending}
+              >
+                Clear deadline
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={mutation.isPending || !value}
+            >
+              {mutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+function toLocalInput(iso) {
+  // Convert an ISO string to "YYYY-MM-DDTHH:mm" in the user's local timezone.
+  const d = typeof iso === 'string' ? new Date(iso) : iso
+  const pad = (n) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
   )
 }
 
@@ -330,12 +449,24 @@ function OverviewTab({ task, taskId }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 space-y-2">
             <p className="text-xs text-muted-foreground">Due Date</p>
-            <p className="text-sm font-semibold mt-0.5">{fmtDate(task.due_date)}</p>
+            <p className="text-sm font-semibold">{fmtDate(task.due_date)}</p>
+            <DeadlineEditor taskId={taskId} dueDate={task.due_date} />
           </CardContent>
         </Card>
       </div>
+
+      {task.pending_late_count > 0 && (
+        <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 p-3 flex items-center gap-2 text-sm">
+          <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0" />
+          <span>
+            <span className="font-medium">{task.pending_late_count}</span> late
+            submission{task.pending_late_count === 1 ? '' : 's'} pending your review —
+            see the Submissions tab.
+          </span>
+        </div>
+      )}
 
       {/* Description */}
       {task.description && (
@@ -366,6 +497,7 @@ function OverviewTab({ task, taskId }) {
 
 // ── Submissions Tab ──────────────────────────────────────────────────────────
 function SubmissionsTab({ taskId }) {
+  const qc = useQueryClient()
   const [selectedSubmission, setSelectedSubmission] = useState(null)
 
   const { data: submissions = [], isLoading } = useQuery({
@@ -374,6 +506,22 @@ function SubmissionsTab({ taskId }) {
       const res = await getSubmissionStatus(taskId)
       return res.data
     },
+  })
+
+  const lateMutation = useMutation({
+    mutationFn: ({ submissionId, action }) =>
+      decideLateSubmission(submissionId, action),
+    onSuccess: (_, vars) => {
+      toast.success(
+        vars.action === 'accept'
+          ? 'Late submission accepted.'
+          : 'Late submission rejected.'
+      )
+      qc.invalidateQueries({ queryKey: ['submission-status', taskId] })
+      qc.invalidateQueries({ queryKey: ['task', taskId] })
+    },
+    onError: (err) =>
+      toast.error(err.response?.data?.detail ?? 'Failed to update late status'),
   })
 
   // Show detail view for a specific submission
@@ -411,36 +559,74 @@ function SubmissionsTab({ taskId }) {
               <TableHead>Student</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted At</TableHead>
+              <TableHead>Late</TableHead>
               <TableHead className="text-right">Similarity Score</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {submissions.map((s) => (
-              <TableRow
-                key={s.student_id}
-                className={
-                  s.submission_id && s.status === 'completed'
-                    ? 'cursor-pointer hover:bg-muted/50'
-                    : ''
-                }
-                onClick={() => {
-                  if (s.submission_id && s.status === 'completed') {
-                    setSelectedSubmission(s)
-                  }
-                }}
-              >
-                <TableCell className="font-medium">{s.student_name}</TableCell>
-                <TableCell>
-                  <StatusBadge status={s.status} />
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {fmtDate(s.submitted_at)}
-                </TableCell>
-                <TableCell className="text-right font-mono text-sm">
-                  {fmtScore(s.plagiarism_score)}
-                </TableCell>
-              </TableRow>
-            ))}
+            {submissions.map((s) => {
+              const isPending = s.late_status === 'pending_review'
+              const clickable = s.submission_id && s.status === 'completed'
+              return (
+                <TableRow
+                  key={s.student_id}
+                  className={clickable ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  onClick={(e) => {
+                    // Don't navigate if clicking on the late-decision buttons
+                    if (e.target.closest('[data-late-actions]')) return
+                    if (clickable) setSelectedSubmission(s)
+                  }}
+                >
+                  <TableCell className="font-medium">{s.student_name}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={s.status} />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {fmtDate(s.submitted_at)}
+                  </TableCell>
+                  <TableCell>
+                    {isPending ? (
+                      <div data-late-actions className="flex items-center gap-1.5">
+                        <LateBadge lateStatus={s.late_status} />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2"
+                          disabled={lateMutation.isPending}
+                          onClick={() =>
+                            lateMutation.mutate({
+                              submissionId: s.submission_id,
+                              action: 'accept',
+                            })
+                          }
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-destructive hover:text-destructive"
+                          disabled={lateMutation.isPending}
+                          onClick={() =>
+                            lateMutation.mutate({
+                              submissionId: s.submission_id,
+                              action: 'reject',
+                            })
+                          }
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    ) : (
+                      <LateBadge lateStatus={s.late_status} />
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm">
+                    {fmtScore(s.plagiarism_score)}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
@@ -876,6 +1062,7 @@ function StudentTaskView({ task, taskId }) {
   const mySubmission = mySubmissions.find(
     (s) => String(s.task_id) === String(taskId)
   )
+  const myLateStatus = mySubmission?.late_status ?? task.my_late_status
 
   // Full plagiarism detail once processing is complete
   const { data: submissionDetail } = useQuery({
@@ -1000,11 +1187,29 @@ function StudentTaskView({ task, taskId }) {
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm font-medium">Your Submission</p>
-                <StatusBadge status={mySubmission.status} />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <LateBadge lateStatus={myLateStatus} />
+                  <StatusBadge status={mySubmission.status} />
+                </div>
               </div>
               {mySubmission.submitted_at && (
                 <p className="text-xs text-muted-foreground">
                   Submitted: {fmtDate(mySubmission.submitted_at)}
+                </p>
+              )}
+              {myLateStatus === 'pending_review' && (
+                <p className="text-xs text-orange-600">
+                  This submission was made after the deadline. Awaiting professor's review.
+                </p>
+              )}
+              {myLateStatus === 'rejected' && (
+                <p className="text-xs text-destructive">
+                  Your late submission was rejected by the professor.
+                </p>
+              )}
+              {myLateStatus === 'accepted' && (
+                <p className="text-xs text-green-600">
+                  Your late submission was accepted by the professor.
                 </p>
               )}
 
@@ -1082,12 +1287,21 @@ function StudentTaskView({ task, taskId }) {
             </div>
           )}
 
-          {/* Upload zone */}
-          {!isPastDue ? (
+          {/* Upload zone — always available; if past due, submission is flagged late */}
+          {!hasSubmission && (
             <div className="space-y-3">
-              <p className="text-sm font-medium">
-                {hasSubmission ? 'Resubmit Assignment' : 'Submit Assignment'}
-              </p>
+              <p className="text-sm font-medium">Submit Assignment</p>
+
+              {isPastDue && (
+                <div className="rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 p-3 flex items-start gap-2 text-xs">
+                  <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+                  <span>
+                    The deadline has passed. You can still submit, but the
+                    submission will be flagged as late and the professor will
+                    decide whether to accept it.
+                  </span>
+                </div>
+              )}
 
               {/* Drop zone */}
               <div
@@ -1144,22 +1358,16 @@ function StudentTaskView({ task, taskId }) {
               )}
 
               {selectedFile && !submitting && (
-                <Button onClick={handleSubmit} className="w-full">
+                <Button
+                  onClick={handleSubmit}
+                  className="w-full"
+                  variant={isPastDue ? 'secondary' : 'default'}
+                >
                   <Upload className="h-4 w-4 mr-2" />
-                  {hasSubmission ? 'Resubmit Assignment' : 'Submit Assignment'}
+                  {isPastDue ? 'Submit Late' : 'Submit Assignment'}
                 </Button>
               )}
             </div>
-          ) : (
-            !hasSubmission && (
-              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-center">
-                <AlertTriangle className="h-6 w-6 text-destructive mx-auto mb-2" />
-                <p className="text-sm font-medium text-destructive">Deadline has passed</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Submissions are no longer accepted for this assignment.
-                </p>
-              </div>
-            )
           )}
         </TabsContent>
 

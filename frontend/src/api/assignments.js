@@ -39,3 +39,6 @@ export const getSubmissionDetail = (submissionId) =>
   client.get(`/assignments/submission-detail/${submissionId}`)
 
 export const getMySubmissions = () => client.get('/assignments/my-submissions')
+
+export const decideLateSubmission = (submissionId, action) =>
+  client.patch(`/assignments/submission/${submissionId}/late-decision`, { action })

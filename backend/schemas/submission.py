@@ -27,6 +27,7 @@ class SubmissionResponse(BaseModel):
     sentences_processed: int
     verbatim_flag: bool = False
     verbatim_matches: list[VerbatimMatch] = []
+    late_status: str = "on_time"
 
 
 class PlagiarismMatch(BaseModel):
@@ -75,17 +76,26 @@ class SubmissionStatusEntry(BaseModel):
     status: str | None
     submitted_at: datetime | None
     plagiarism_score: float | None
+    late_status: str | None = None
 
 
 class MySubmissionEntry(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    task_id: UUID
     task_title: str
     task_code: str
     score: float
     status: str
     submitted_at: datetime
+    late_status: str = "on_time"
 
 
 class TaskPublishRequest(BaseModel):
     is_published: bool
+
+
+class LateDecisionRequest(BaseModel):
+    """Professor's decision on a late submission."""
+
+    action: str  # 'accept' or 'reject'

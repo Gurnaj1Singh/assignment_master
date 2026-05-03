@@ -15,3 +15,6 @@ export const getClassroomTasks = (classroomId) =>
 
 export const createTask = (classroomId, data) =>
   client.post(`/classrooms/${classroomId}/tasks`, data)
+
+export const updateTaskDeadline = (taskId, dueDate) =>
+  client.patch(`/classrooms/tasks/${taskId}/deadline`, { due_date: dueDate })

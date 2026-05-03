@@ -108,6 +108,18 @@ class TaskDetailFullResponse(BaseModel):
     # Professor-only fields (None for students)
     submission_count: int | None = None
     average_score: float | None = None
+    pending_late_count: int | None = None
     # Student-only fields (None for professors)
     my_status: str | None = None
     my_score: float | None = None
+    my_late_status: str | None = None
+    my_submitted_at: datetime | None = None
+
+
+class TaskDeadlineUpdateRequest(BaseModel):
+    """Professor updates the due_date on an existing task. None clears the deadline."""
+
+    due_date: datetime | None = Field(
+        default=None,
+        description="New deadline (timezone-aware ISO 8601). Pass null to remove the deadline.",
+    )

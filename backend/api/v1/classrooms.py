@@ -11,6 +11,7 @@ from ...schemas.classroom import (
     ClassroomCreateRequest,
     ClassroomMemberResponse,
     TaskCreateRequest,
+    TaskDeadlineUpdateRequest,
     TaskListEntry,
 )
 from ...services.classroom_service import ClassroomService
@@ -150,5 +151,22 @@ def create_task(
         "task_id": str(task.id),
         "task_code": task.assignment_code,
         "title": task.title,
+        "due_date": task.due_date,
+    }
+
+
+@router.patch("/tasks/{task_id}/deadline", status_code=status.HTTP_200_OK)
+def update_task_deadline(
+    task_id: UUID,
+    request: TaskDeadlineUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_role(current_user, "professor", "Only professors can change deadlines.")
+    service = ClassroomService(db)
+    task = service.update_task_deadline(task_id, current_user.id, request.due_date)
+    return {
+        "message": "Deadline updated.",
+        "task_id": str(task.id),
         "due_date": task.due_date,
     }

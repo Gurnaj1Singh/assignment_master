@@ -159,6 +159,30 @@ class ClassroomService:
         self.db.refresh(task)
         return task
 
+    def update_task_deadline(
+        self, task_id: UUID, professor_id: UUID, due_date
+    ) -> AssignmentTask:
+        """
+        Update a task's deadline. Only the professor who owns the task's
+        classroom may do this. Pass None to clear the deadline.
+        """
+        task = self.task_repo.get_by_id(task_id)
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found.",
+            )
+        if task.classroom.professor_id != professor_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not own this task.",
+            )
+
+        task.due_date = due_date
+        self.db.commit()
+        self.db.refresh(task)
+        return task
+
     def attach_task_pdf(
         self, task_id: UUID, professor_id: UUID, pdf_path: str
     ) -> AssignmentTask:

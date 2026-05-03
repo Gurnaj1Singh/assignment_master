@@ -40,6 +40,16 @@ submission_status = Enum(
     name="submission_status",
 )
 
+# Late submission lifecycle.
+#   on_time        — submitted before due_date (or task had no deadline)
+#   pending_review — submitted after due_date; professor has not yet decided
+#   accepted       — professor accepted the late submission
+#   rejected       — professor rejected the late submission
+late_status_enum = Enum(
+    "on_time", "pending_review", "accepted", "rejected",
+    name="late_status_enum",
+)
+
 
 class AssignmentTask(TimestampMixin, SoftDeleteMixin, Base):
     """
@@ -129,6 +139,16 @@ class Submission(TimestampMixin, SoftDeleteMixin, Base):
 
     # Placeholder for Day 2 verbatim detection feature.
     verbatim_flag = Column(Boolean, default=False, nullable=False)
+
+    # Late-submission state. 'on_time' for submissions made before due_date,
+    # otherwise 'pending_review' until the professor accepts or rejects it.
+    late_status = Column(
+        late_status_enum,
+        default="on_time",
+        nullable=False,
+        server_default="on_time",
+    )
+    late_decision_at = Column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
         # WHY this constraint?
